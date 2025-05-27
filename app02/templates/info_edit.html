@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<form method="post">
+
+{% csrf_token %}
+  <div class="mb-3 row">
+    <label for="inputPassword" class="col-sm-2 col-form-label">设备名</label>
+    <div class="col-sm-10">
+      <input name="device" type="text" class="form-control" id="inputPassword" value="{{ row_obj.device }}">
+    </div>
+      <label for="inputPassword" class="col-sm-2 col-form-label">设备IP</label>
+    <div class="col-sm-10">
+      <input name="ip" type="text" class="form-control" id="inputPassword" value="{{ row_obj.ip }}">
+    </div>
+      <label for="inputPassword" class="col-sm-2 col-form-label">设备组</label>
+    <div class="col-sm-10">
+      <input name="group_name" type="text" class="form-control" id="inputPassword" value="{{ row_obj.group_name }}">
+    </div>
+      <label for="inputPassword" class="col-sm-2 col-form-label">设备类型</label>
+    <div class="col-sm-10">
+      <input name="device_type" type="text" class="form-control" id="inputPassword" value="{{ row_obj.device_type }}">
+    </div>
+      <label for="inputPassword" class="col-sm-2 col-form-label">用户名</label>
+    <div class="col-sm-10">
+      <input name="user" type="text" class="form-control" id="inputPassword" value="{{ row_obj.user }}">
+    </div>
+       <label for="inputPassword" class="col-sm-2 col-form-label">密码</label>
+    <div class="col-sm-10">
+      <input name="password" type="text" class="form-control" id="inputPassword" value="{{ row_obj.password }}">
+    </div>
+        <label for="inputPassword" class="col-sm-2 col-form-label">port_up</label>
+    <div class="col-sm-10">
+      <input name="port_up" type="number" class="form-control" id="inputPassword" value="{{ port_up }}">
+    </div>
+        <label for="inputPassword" class="col-sm-2 col-form-label">lldp_nei</label>
+    <div class="col-sm-10">
+      <input name="lldp_nei" type="number" class="form-control" id="inputPassword" value="{{ lldp_nei }}">
+    </div>
+
+        <label for="inputPassword" class="col-sm-2 col-form-label">ospf_nei</label>
+    <div class="col-sm-10">
+      <input name="ospf_nei" type="number" class="form-control" id="inputPassword" value="{{ ospf_nei }}">
+    </div>
+              <label for="inputPassword" class="col-sm-2 col-form-label">pim_nei</label>
+    <div class="col-sm-10">
+      <input name="pim_nei" type="number" class="form-control" id="inputPassword" value="{{ pim_nei }}">
+    </div>
+              <label for="inputPassword" class="col-sm-2 col-form-label">zb</label>
+    <div class="col-sm-10">
+      <input name="zb" type="text" class="form-control" id="inputPassword" value="{{ zb }}">
+    </div>
+              <label for="inputPassword" class="col-sm-2 col-form-label">hw_patch</label>
+    <div class="col-sm-10">
+      <input name="hw_patch" type="text" class="form-control" id="inputPassword" value="{{ hw_patch }}">
+    </div>
+      <button type="submit" class="btn btn-primary ">提交</button>
+  </div>
+</form>
+</body>
+</html>

@@ -1,0 +1,88 @@
+{% extends 'layout.html' %}
+
+{% block css %}
+    <style>
+        .table-link {
+            text-decoration: none; /* 去除下划线 */
+            color: #1890ff; /* 继承父元素的颜色 inherit*/
+            display: block; /* 使链接占据整个单元格 */
+            /* 可以添加更多的样式来匹配表格单元格的外观 */
+        }
+
+        .table-link:hover {
+            text-decoration: none; /* 鼠标悬停时不显示下划线 */
+            color: #286090;
+        }
+
+        .backup-item {
+            clear: both;
+            font-size: 0;
+        }
+
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container" style="margin-bottom: 20px">
+
+        <div class="backup-item">
+
+            <div style="float: right;width: 300px;">
+
+                <form method="get">
+                    <div class="input-group">
+                        <input type="text" name="query" class="form-control" placeholder="关键字"
+                               value="{{ search_data }}">
+                        <span class="input-group-btn">
+                        <button class="btn btn-default" type="submit">
+                            <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                        </button>
+                      </span>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+
+    <div class="container">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-list" aria-hidden="true"></span> 错包统计
+            </div>
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th>设备名称</th>
+                    <th>设备所属接口</th>
+                    <th>CRC数量</th>
+                    <th>接口状态</th>
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for conf_backup in structured_data %}
+                    <tr>
+                        <td>{{ conf_backup.Hostname }}</td>
+                        <td>{{ conf_backup.Interface }}</td>
+                        <td>{{ conf_backup.CRC }}</td>
+                        <td>{{ conf_backup.Link_Status }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <ul class="pagination" style="float: right">
+            {{ page_string }}
+        </ul>
+
+    </div>
+
+{% endblock %}
+
+{% block js %}
+
+
+{% endblock %}

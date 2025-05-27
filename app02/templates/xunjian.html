@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>巡检系统</title>
+    {#    <link rel="stylesheet" href="{% static 'plugins/bootstrap-4.6.2-dist/css/bootstrap.css' %}">#}
+     <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.css' %}">
+    <style>
+         .hidden-column {
+             display: none; /*隐藏列*/
+         }
+         .progress {
+            width: 50%;
+            margin: 20px auto;
+        }
+
+        .progress-bar {
+            background-color: #007bff;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            color: white;
+        }
+        .con111 {
+              display: grid;
+                align-items: center; /* 垂直居中 */
+                height: 100px; /* 或者其他高度 */
+            height: 80px;
+             gap: 50px;
+         .btn-outline-primary + .btn-outline-primary {
+                margin-left: 10px; /* 根据需要调整间距大小 */
+        }
+        }
+
+
+    </style>
+     <script src="{% static 'js/jquery-3.6.0.min.js'%}"></script>
+</head>
+<div>
+
+
+<nav class="navbar navbar-inverse">
+{#<nav class="navbar navbar-inverse">#}
+  <div class="container-fluid">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/info/list/">巡检系统</a>
+    </div>
+<div class="container">
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="/info/list/">网络巡检 <span class="sr-only">(current)</span></a></li>
+          <li><a href="#">主机巡检</a></li>
+        <li><a href="/search/history/">巡检历史</a></li>
+          <li><a href="/admin/list/">人员管理</a></li>
+          </ul>
+        </li>
+      </ul>
+      <form class="navbar-form navbar-left">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search">
+        </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+      </form>
+      <ul class="nav navbar-nav navbar-right">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{ request.session.info.name }} <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Action</a></li>
+            <li><a href="#">Another action</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="#">Separated link</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+  </div>
+</nav>
+
+{#</nav>#}
+{#<nav class="navbar navbar-expand-lg navbar-dark bg-dark">#}
+{#    <nav class="navbar navbar-expand-lg navbar-light bg-dark">#}
+{#    <a class="navbar-brand" href="/info/list/">巡检系统</a>#}
+{#        </nav>#}
+{#<div class="container" >#}
+{#  <nav class="navbar navbar-expand-lg navbar-light bg-dark">#}
+{#      <div class="container">#}
+{#      <a class="navbar-brand" href="/info/list/">巡检</a>#}
+{#      <a class="navbar-brand" href="/search/history/">巡检历史</a>#}
+{#      <a class="navbar-brand" href="#">人员管理</a>#}
+{#      </div>#}
+{#    <form class="d-flex">#}
+{#      <input type="text" class="form-control me-2" placeholder="Search">#}
+{#    </form>#}
+{#  </nav>#}
+{#</div>#}
+{##}
+{#</nav>#}
+
+<div class="container">
+ <form class="navbar-form navbar-right" method="post">
+     {% csrf_token %}
+        <div class="form-group">
+          <input type="text" class="form-control" name="text"  placeholder="Search">
+        </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+      </form>
+</div>
+<div  class="container">
+    <table class="table table-bordered">
+  <thead>
+    <tr>
+      <th scope="col" class="hidden-column">序号</th>
+      <th scope="col">巡检时间</th>
+      <th scope="col">巡检结果</th>
+        <th scope="col">是否为基线</th>
+        <th scope="col">设置</th>
+        <th scope="col">详情</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for item in data_list %}
+  <tr>
+      <th scope="row" class="hidden-column">{{item.id}}</th>
+      <td>{{item.time}}</td>
+           <td>{{item.result}}</td>
+      <td>{{item.jixian}}</td>
+                <td>
+          <a class="btn btn-primary btn-sm" href="/set/jixian/?nid={{item.id}}">
+              设置为基线
+          </a>
+
+      </td>
+      <td>
+      <a href="/info/history/?nid={{item.time}}">详情</a>
+          <a href="/peizhiguanli/device/?nid={{item.time}}">详情2</a>
+        </td>
+
+        <td>
+          <a href="/history/delete/?nid={{item.time}}">
+            <input type="button" value="删除" class="btn btn-danger btn-sm">
+          </a>
+
+      </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+    <nav aria-label="Page navigation" style="float: right;">
+  <ul class="pagination">
+                {{ page_string }}
+            </ul>
+        <span aria-hidden="true">&raquo;</span>
+  </ul>
+</nav>
+          </div>
+
+
+     <script src="{% static 'js/jquery-min.js' %}"></script>
+        <script src="{% static 'plugins/bootstrap-5.3.0/js/bootstrap.js' %}"></script>
+     <script type="text/javascript">
+
+     </script>
+ </div>
+</div>
+</body>
+</html>

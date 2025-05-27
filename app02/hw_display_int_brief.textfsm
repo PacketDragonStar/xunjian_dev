@@ -1,0 +1,10 @@
+Value Required INTERFACE (\S+)
+Value LINK_STATUS (\S+)
+Value PROTOCOL_STATUS (\S+)
+Value INUTIL (\S+)
+Value OUTUTIL (\S+)
+Value INERRORS (\S+)
+Value OUTERRORS (\S+)
+
+Start
+  ^${INTERFACE}\s+${LINK_STATUS}\s+${PROTOCOL_STATUS}\s+${INUTIL}\s+${OUTUTIL}\s+${INERRORS}\s+${OUTERRORS} -> Record

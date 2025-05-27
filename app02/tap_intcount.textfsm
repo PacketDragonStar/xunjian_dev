@@ -1,0 +1,10 @@
+Value Required Interface (\d+)
+Value Required Link (\S+)
+Value Required PktsIn (\d+)
+Value Required BytesIn (\d+)
+Value Required PktsOut (\d+)
+Value Required BytesOut (\d+)
+Value Required Errors (\d+)
+
+Start
+  ^${Interface}\s+${Link}\s+${PktsIn}\s+${BytesIn}\s+${PktsOut}\s+${BytesOut}\s+${Errors} -> Record

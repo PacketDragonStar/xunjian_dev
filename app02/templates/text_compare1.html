@@ -1,0 +1,50 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diff Viewer</title>
+    <style>
+        .diff-container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .diff-panel {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+        .removed {
+            background-color: #FFD6D6;
+        }
+        .added {
+            background-color: #D6FFD6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Diff Viewer</h1>
+    <div class="diff-container">
+        <div class="diff-panel">
+            <h2>File 1</h2>
+            <pre>{{ file1 }}</pre>
+        </div>
+        <div class="diff-panel">
+            <h2>File 2</h2>
+            <pre>{{ file2 }}</pre>
+        </div>
+    </div>
+    <div>
+        {% for line in diff %}
+            {% if line.0 == '+' %}
+                <div class="added">{{ line }}</div>
+            {% elif line.0 == '-' %}
+                <div class="removed">{{ line }}</div>
+            {% else %}
+                {{ line }}
+            {% endif %}
+        {% endfor %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,243 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block content %}
+
+    <div class="container">
+
+
+        <div style="margin-bottom: 10px">
+            <button id="btnDevAdd" type="button" class="btn btn-primary">
+                添加函数
+            </button>
+            <div style="float: right;width: 300px;">
+                <form method="get">
+                    <div class="input-group">
+                        <input type="text" name="query" class="form-control" placeholder="关键字"
+                               value="{{ search_data }}">
+                        <span class="input-group-btn">
+                        <button class="btn btn-default" type="submit">
+                            <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                        </button>
+                      </span>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-list" aria-hidden="true"></span> 批量导入
+            </div>
+            <form style="margin-top: 10px; margin-left: 10px;" method="post" enctype="multipart/form-data"
+                  action="/func/multi/">
+                {% csrf_token %}
+                <div class="form-group">
+
+                    <div>
+                        <input style="margin-bottom: 5px;" type="file" name="dev">
+                        <a href="/static/inventory_func.xlsx">模板文件：inventory.xlsx</a>
+                    </div>
+
+                    <input style="margin-top: 5px;" type="submit" class="btn btn-info btn-sm" value="上传">
+
+                </div>
+            </form>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-list" aria-hidden="true"></span> 设备列表
+            </div>
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th>函数名</th>
+                    <th>命令</th>
+                     <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for dev in queryset %}
+                    <tr>
+                        <td>{{ dev.func}}</td>
+                        <td>{{ dev.command }}</td>
+                                            <td>
+                            <input uid="{{ dev.id }}" type="button" class="btn btn-primary btn-xs btn-edit"
+                                   value="编辑">
+                            <input uid="{{ dev.id }}" class="btn btn-danger btn-xs btn-delete" type="button"
+                                   value="删除">
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 新建对话框 -->
+        <div class="modal fade" id="myDevModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myDevModalLabel">添加设备</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form id="formDevAdd">
+                            <div class="clearfix">
+
+                                {% for field in form %}
+                                    <div class="col-lg-6">
+                                        <div class="form-group" style="position:relative;margin-bottom: 20px;">
+                                            <label>{{ field.label }}</label>
+                                            {{ field }}
+                                            <span class="error-msg"
+                                                  style="color: #ac2925;position: absolute;"></span>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+                        </form>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                        <button id="btnDevSave" type="button" class="btn btn-primary">保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 删除对话框 -->
+        <div class="modal fade" id="deleteDevModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div>
+                    <div style="width: 400px;margin-top: 200px;" class="alert alert-danger alert-dismissible fade in"
+                         role="alert">
+
+                        <h4>警告</h4>
+                        <p style="margin: 10px 0;">所有关联数据都会被删除！</p>
+                        <p style="text-align: right">
+                            <button id="btnDevConfirmDelete" type="button" class="btn btn-danger">确 定</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">取 消</button>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <ul class="pagination" style="float: right">
+            {{ page_string }}
+        </ul>
+
+    </div>
+
+
+
+{% endblock %}
+
+
+{% block js %}
+
+    <script type="text/javascript">
+        var DELETE_ID;
+
+        $(function () {
+            // 页面框架加载完成之后代码自动执行
+            bindBtnDevAddEvent();
+            bindBtnDevSaveEvent();
+            bindBtnDevDeleteEvent();
+            bindBtnDevConfirmDeleteEvent();
+            bindBtnDevEditEvent();
+        })
+
+        function bindBtnDevAddEvent() {
+            $('#btnDevAdd').click(function () {
+                // 点击按钮，显示对话框
+                $('#myDevModal').modal('show')
+            });
+        }
+
+        function bindBtnDevSaveEvent() {
+
+            $('#btnDevSave').click(function () {
+                // 清空错误信息
+                $('.error-msg').empty();
+                $.ajax({
+                    url: '/func/add/',
+                    type: 'POST',
+                    data: $("#formDevAdd").serialize(),
+                    dataType: "JSON",
+                    success: function (res) {
+                        if (res.status) {
+                            // console.log(res)
+                            // alert("添加成功")
+                            // 清空表单 $("#formAdd")是jQuery对象 -> 加[0]为DOM对象
+                            $("#formDevAdd")[0].reset();
+                            // 关闭对话框
+                            $("#myDevModal").modal('hide');
+                            // 刷新页面
+                            location.reload();
+
+                        } else {
+                            $.each(res.error, function (name, errorsList) {
+                                console.log(name, errorsList);
+                                $("#id_" + name).next().text(errorsList[0]);
+                            })
+                        }
+                    }
+                })
+            })
+        }
+
+        function bindBtnDevDeleteEvent() {
+            $('.btn-delete').click(function () {
+                $('#deleteDevModal').modal('show');
+                DELETE_ID = $(this).attr('uid');
+                // console.log(DELETE_ID);
+            })
+        }
+
+        function bindBtnDevConfirmDeleteEvent() {
+            $("#btnDevConfirmDelete").click(function () {
+                $.ajax({
+                    url: "/func/delete/",  //    => /order/delete/?uid=123
+                    type: "GET",
+                    data: {
+                        uid: DELETE_ID
+                    },
+                    dataType: "JSON",
+                    success: function (res) {
+                        if (res.status) {
+                            // 隐藏删除框
+                            // $("#deleteModal").modal('hide');
+                            // 在页面上将当前一行数据删除（js）
+                            // $("tr[uid='" + DELETE_ID + "']").remove();
+                            // 要删除的ID制空
+                            // DELETE_ID = 0;
+                            // 简单的思路：
+                            location.reload();
+                        } else {
+                            // 删除失败
+                            alert(res.error);
+                        }
+                    }
+                })
+            });
+        }
+
+        function bindBtnDevEditEvent() {
+            $(".btn-edit").click(function () {
+                $("#myDevModalLabel").text("编辑设备");
+                // 点击编辑，显示对话框
+                $("#myDevModal").modal("show");
+            })
+        }
+
+    </script>
+
+{% endblock %}

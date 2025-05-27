@@ -1,0 +1,350 @@
+{% extends "layout.html" %}
+
+{% block css %}
+    <style>
+        .table-link {
+            text-decoration: none; /* 去除下划线 */
+            color: #1890ff; /* 继承父元素的颜色 inherit*/
+            display: block; /* 使链接占据整个单元格 */
+            /* 可以添加更多的样式来匹配表格单元格的外观 */
+        }
+
+        .table-link:hover {
+            text-decoration: none; /* 鼠标悬停时不显示下划线 */
+            color: #286090;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+
+        <div style="margin-bottom: 10px">
+            <button id="btnConfigAdd" type="button" class="btn btn-primary">
+                <span class="glyphicon glyphicon-expand" aria-hidden="true"></span> 开始备份
+            </button>
+            <a class="btn btn-primary" href="/configBackup/select/">
+                <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span> 选择设备
+            </a>
+            <button id="btnNoteAdd" type="button" class="btn btn-primary">
+                <span class="glyphicon glyphicon-edit" aria-hidden="true"></span> 添加备注
+            </button>
+
+
+            <div style="float: right;width: 300px;">
+                <form method="get">
+                    <div class="input-group">
+                        <input type="text" name="query" class="form-control" placeholder="关键字"
+                               value="{{ search_data }}">
+                        <span class="input-group-btn">
+                        <button class="btn btn-default" type="submit">
+                            <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                        </button>
+                      </span>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-list" aria-hidden="true"></span> 备份列表
+            </div>
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th>
+                        <label for="select-all-checkbox">
+                            <input type="checkbox" id="select-all-checkbox">
+                        </label>
+                    </th>
+                    <th>设备名称</th>
+                    <th>IP地址</th>
+                    <th>命令</th>
+                    <th>创建时间</th>
+                    <th>配置状态</th>
+                    <th>失败原因</th>
+                    <th>配置是否改变</th>
+                    <th>备注</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for conf_backup in queryset %}
+                    <tr>
+                        <td>
+                            <label>
+                                <input type="checkbox" class="device-checkbox"
+                                       value="{{ conf_backup.id }}">
+                            </label>
+                        </td>
+                        <td>{{ conf_backup.dev.name }}</td>
+                        <td>{{ conf_backup.dev.ip }}</td>
+                        <td>
+                            <a href="{% url 'conf_backup_view' conf_backup.id %}" target="_blank" class="table-link">
+                                {{ conf_backup.cmd }}</a>
+                        </td>
+                        <td>{{ conf_backup.created_time }}</td>
+                        <td>{{ conf_backup.get_backup_status_display }}</td>
+                        <td>
+                            {{ conf_backup.failure_reason|truncatechars:20 }}
+                            {% if conf_backup.failure_reason|length > 20 %}
+                                <a href="#" class="show-full-failure" data-id="{{ conf_backup.id }}"
+                                   data-reason="{{ conf_backup.failure_reason|escapejs }}">查看更多</a>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'diff_view' conf_backup.id %}" target="_blank" class="table-link">
+                                {{ conf_backup.config_changed }}</a>
+                        </td>
+                        <td>{{ conf_backup.notes }}</td>
+                        <td>
+                            <a class="btn btn-primary btn-xs"
+                               href="{% url 'conf_backup_view' conf_backup.id %}" target="_blank">查看</a>
+                            <a class="btn btn-primary btn-xs"
+                               href="{% url 'conf_backup_download' conf_backup.id %}">下载</a>
+                        </td>
+
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+
+        <!-- 一键巡检对话框 -->
+        <div class="modal fade" id="myConfig" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div>
+                    <div style="width: 400px;margin-top: 200px;" class="alert alert-warning alert-dismissible fade in"
+                         role="alert">
+
+                        <h4>提示</h4>
+                        <p style="margin: 10px 0;">是否进行一键备份！</p>
+                        <div class="text-center mt-4" id="loadingSpinner" style="display: none;">
+                            <div class="spinner-border" role="status">
+                                <span class="sr-only">备份中，请稍后...</span>
+                            </div>
+                            备份中，请稍后...
+                        </div>
+                        <p style="text-align: right">
+                            <button id="btnConfigAll" type="button" class="btn btn-warning">确 定</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">取 消</button>
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 显示完整的失败原因信息 -->
+        <div class="modal fade" id="failure-modal" tabindex="-1" role="dialog" aria-labelledby="failureModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h5 class="modal-title" id="failureModalLabel">失败原因</h5>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 完整信息将在这里显示 -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加备注 -->
+        <div class="modal fade" id="addNoteModal" tabindex="-1" role="dialog"
+             aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h5 class="modal-title" id="addNoteModalLabel">添加备注</h5>
+                    </div>
+                    <div class="modal-body">
+                        <textarea id="noteInput" class="form-control" rows="5" placeholder="输入备注..."></textarea>
+                        <input type="hidden" id="selectedIds" name="ids" value="">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" id="saveNoteBtn">保存备注</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <ul class="pagination" style="float: right">
+            {{ page_string }}
+        </ul>
+
+
+    </div>
+
+{% endblock %}
+
+{% block js %}
+
+    <script type="text/javascript">
+        var SELECT_IDS = [];
+
+        $(function () {
+            // 页面框架加载完成之后代码自动执行
+            bindBtnConfigAddEvent();
+            bindBtnConfigAllEvent();
+            bindBtnDevEvent();
+            bindCheckBokEvent();
+            bindNotesAddEvent();
+            bindBtnNoteAddEvent();
+            bindShowFullFailureReason(); // 绑定显示完整失败原因的功能
+
+        })
+
+        function bindBtnConfigAddEvent() {
+            $('#btnConfigAdd').click(function () {
+                // 点击按钮，显示对话框
+                $('#myConfig').modal('show')
+            })
+        }
+
+        function bindBtnDevEvent() {
+            $('#btnDevAdd').click(function () {
+                // 点击按钮，显示对话框
+                $('#selectDeviceModal').modal('show')
+            })
+        }
+
+
+        function bindBtnConfigAllEvent() {
+            $('#btnConfigAll').click(function () {
+                // 禁用按钮
+                $(this).prop('disabled', true);
+                // 显示加载指示器
+                $('#loadingSpinner').show();
+                $.ajax({
+                    url: '/configBackup/add/',
+                    type: 'GET',
+                    success: function (res) {
+                        // 隐藏加载指示器
+                        $('#loadingSpinner').hide();
+                        // 处理响应
+                        if (res.success) {
+                            alert('备份操作完成');
+                            // 刷新页面或其他操作
+                            location.reload();
+                        } else {
+                            alert('备份操作出现问题: ' + res.error);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // 隐藏加载指示器
+                        $('#loadingSpinner').hide();
+                        // 处理 AJAX 错误
+                        alert('备份操作失败: ' + error);
+                    }
+                });
+            });
+        }
+
+        function bindCheckBokEvent() {
+            // 绑定全选框的 change 事件
+            $('#select-all-checkbox').change(function () {
+                var checked = $(this).prop('checked');
+                $('.device-checkbox').prop('checked', checked);
+                updateSelectedIds(); // 更新 SELECT_IDS
+            });
+            // 绑定单个复选框的 change 事件
+            $('.device-checkbox').change(function () {
+                updateSelectedIds(); // 每当单个复选框状态改变时，也更新 SELECT_IDS
+            });
+        }
+
+        function updateSelectedIds() {
+            // 清空 SELECT_IDS 数组
+            SELECT_IDS = [];
+            // 遍历所有选中的复选框，并将它们的 value（即 conf_backup.id）添加到 SELECT_IDS 数组中
+            $('.device-checkbox:checked').each(function () {
+                SELECT_IDS.push(this.value);
+            });
+            // 可以在这里添加日志输出，但通常最好是在需要时访问 SELECT_IDS
+            //console.log(SELECT_IDS);
+        }
+
+        function bindBtnNoteAddEvent() {
+            $('#btnNoteAdd').click(function () {
+                // 在这里检查SELECT_IDS是否为空，并给出提示
+                if (SELECT_IDS.length === 0) {
+                    alert('请选择需要备注的数据！');
+                    return false; // 阻止模态框的打开
+                }
+                // 点击按钮，显示对话框
+                $('#addNoteModal').modal('show')
+            })
+        }
+
+        function bindNotesAddEvent() {
+            $('#saveNoteBtn').click(function () {
+                var notes = $('#noteInput').val();
+                var ids = SELECT_IDS.join(','); // 将数组转换为逗号分隔的字符串
+                $('#selectedIds').val(ids); // 更新隐藏字段的值
+
+                // 发送POST请求
+                $.ajax({
+                    url: '/configBackup/note/',
+                    type: 'POST',
+                    data: {
+                        ids: ids,
+                        notes: notes
+                    },
+                    success: function (response) {
+                        // 处理成功响应
+                        alert('备注保存成功！');
+                        $('#addNoteModal').modal('hide'); // 关闭模态框
+                        // 可以在这里刷新页面或更新前端显示
+                        location.reload()
+                    },
+                    error: function (xhr, status, error) {
+                        // 处理错误响应
+                        alert('保存备注时发生错误：' + error);
+                    }
+                });
+            });
+        }
+
+        // 绑定显示完整失败原因的功能
+        function bindShowFullFailureReason() {
+            // 使用jQuery选择器找到所有带有 'show-full-failure' 类的元素
+            $('.show-full-failure').on('click', function (event) {
+                event.preventDefault(); // 阻止链接的默认跳转行为
+
+                // 从当前点击的链接中提取数据
+                var backupId = $(this).data('id'); // 假设data-id属性包含备份的ID
+                var fullReason = $(this).data('reason'); // 假设data-reason属性包含完整的失败原因
+
+                // 清除（或设置）模态框中现有的内容
+                $('#failure-modal .modal-body').text(fullReason);
+
+                // 显示模态框
+                $('#failure-modal').modal('show');
+
+                // （可选）如果您想要根据备份ID做进一步的操作，可以在这里进行
+                // 例如，您可以在模态框的标题中显示备份ID
+                $('#failureModalLabel').text('失败原因 - 备份ID: ' + backupId);
+            });
+        }
+
+
+    </script>
+
+{% endblock %}

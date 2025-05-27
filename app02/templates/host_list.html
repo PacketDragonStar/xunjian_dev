@@ -1,0 +1,105 @@
+{% extends 'layout.html' %}
+
+{% block css %}
+
+    <style>
+
+        body {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+            background-color: #fff;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        .host_content {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 20px;
+            background-color: #ddd;
+        }
+        
+        #file-select {
+            cursor: pointer;
+        }
+
+        #file-content {
+            padding: 10px;
+        }
+
+    </style>
+
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="host_select">
+            <label for="file-select" class="block">选择文件：</label>
+            <select id="file-select" class="host_select">
+                <!-- 下拉选项将通过JS动态生成 -->
+            </select>
+            <button id="query-button" class="btn btn-primary">查询</button>
+            <div id="file-content" class="host_content"></div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+    <script>
+        // 等待文档加载完成
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchFiles();
+        });
+
+        function fetchFiles() {
+            // 发送GET请求到后端获取文件列表
+            fetch('/host/detail/')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('file-select');
+                    // 清空并更新下拉选项
+                    select.innerHTML = '';
+                    data.files.forEach(fileName => {
+                        const option = document.createElement('option');
+                        option.value = fileName;
+                        option.innerText = fileName;
+                        select.appendChild(option);
+                    });
+                    // 默认展示最新的txt文本内容
+                    if (data.files.length > 0) {
+                        displayFileContent(data.files[0]);
+                        // 设置默认选中项为最新文件
+                        select.value = data.files[0];
+                    }
+                })
+                .catch(error => {
+                    console.error('获取文件列表时出错:', error);
+                });
+        }
+
+        // 监听查询按钮点击事件
+        document.getElementById('query-button').addEventListener('click', function () {
+            const selectedFileName = document.getElementById('file-select').value;
+            displayFileContent(selectedFileName);
+        });
+
+        function displayFileContent(fileName) {
+            // 发送POST请求到后端获取并显示文件内容
+            const formData = new FormData();
+            formData.append('selected_file', fileName);
+            fetch('/host/detail/', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.text()) // 假设文件内容是纯文本，使用response.text()获取
+                .then(content => {
+                    document.getElementById('file-content').innerText = content;
+                })
+                .catch(error => {
+                    console.error('获取文件内容时出错:', error);
+                    document.getElementById('file-content').innerText = '文件内容获取失败';
+                });
+        }
+    </script>
+{% endblock %}

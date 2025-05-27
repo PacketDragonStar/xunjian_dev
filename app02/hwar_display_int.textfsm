@@ -1,0 +1,41 @@
+Value Required INTERFACE (\S+)
+Value LINK_STATUS (\S+)
+Value LINE_PROTOCOL_STATUS (\S+)
+Value DESCRIPTION ([^\n]+)
+Value MTU (\d+)
+Value IP_ADDRESS (\d+\.\d+\.\d+\.\d+\/\d+)
+Value HARDWARE_ADDRESS ([0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4})
+Value PORT_BW (\d+G)
+Value DUPLEX (\S+)
+Value LAST_UP_TIME (\S+ \S+ \S+)
+Value RX_POWER (-?\d+\.\d+dBm)
+Value TX_POWER (-?\d+\.\d+dBm)
+Value WARNING_RANGE_RX ([^\n]+)
+Value CRC_ERRORS (\d+)
+Value OTHER_ERRORS (\d+)
+
+Start
+  ^${INTERFACE} current state :${LINK_STATUS} .*
+  ^Line protocol current state : ${LINE_PROTOCOL_STATUS}
+  ^Description: ${DESCRIPTION}
+  ^Route Port,The Maximum Transmit Unit is ${MTU}
+  ^Internet Address is ${IP_ADDRESS}
+  ^IP Sending Frames' Format is \S+, Hardware address is ${HARDWARE_ADDRESS}
+  ^Port BW: ${PORT_BW}
+  ^\S+ duplex mode
+  ^Last \S+ up time   : ${LAST_UP_TIME}
+  ^Last 300 seconds input rate: \d+ bits/sec, \d+ packets/sec
+  ^Last 300 seconds output rate: \d+ bits/sec, \d+ packets/sec
+  ^Rx Power: ${RX_POWER}
+  ^Warning range: ${WARNING_RANGE_RX}
+  ^Tx Power: ${TX_POWER}
+  ^Input:
+  ^  Unicast: \d+ packets, Multicast: \d+ packets
+  ^  Broadcast: \d+ packets
+  ^  CRC: ${CRC_ERRORS} packets
+  ^  Other: ${OTHER_ERRORS} packets
+  ^Output:
+  ^  Unicast: \d+ packets, Multicast: \d+ packets
+  ^  Broadcast: \d+ packets
+  ^  Total output error: \d+ packets
+

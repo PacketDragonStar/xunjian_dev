@@ -1,0 +1,186 @@
+{% extends 'layout.html' %}
+
+{% load static %}
+
+{% block content %}
+    <div class="container">
+        <div style="margin-bottom: 20px">
+            <button id="btnDevSel" type="button" class="btn btn-primary">
+                选定设备
+            </button>
+            <div style="float: right;width: 300px;">
+                <form method="get">
+                    <div class="input-group">
+                        <input type="text" name="query" class="form-control" placeholder="关键字"
+                               value="{{ search_data }}">
+                        <span class="input-group-btn">
+                        <button class="btn btn-default" type="submit">
+                            <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                        </button>
+                      </span>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-list" aria-hidden="true"></span> 设备列表
+            </div>
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th><label for="selectAll"></label><input type="checkbox" id="selectAll"></th> <!-- 可选的全选框 -->
+                    <th>ID</th>
+                    <th>设备名称</th>
+                    <th>IP</th>
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for dev in queryset %}
+                    <tr>
+                        <td><label>
+                            <input type="checkbox" name="deviceId" value="{{ dev.id }}" class="deviceCheckbox">
+                        </label></td>
+                        <!-- 添加复选框 -->
+                        <td>{{ dev.id }}</td>
+                        <td>{{ dev.device }}</td>
+                        <td>{{ dev.ip }}</td>
+
+
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 选择设备备份模态框 -->
+        <div class="modal fade" id="DevSelModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div>
+
+                    <div style="width: 400px;margin-top: 200px;" class="alert alert-warning alert-dismissible fade in"
+                         role="alert">
+
+                        <h4>提示</h4>
+                        <p style="margin: 10px 0;">是否进行配置备份！</p>
+                        <div class="text-center mt-4" id="loadingSpinner" style="display: none;">
+                            <div class="spinner-border" role="status">
+                                <span class="sr-only">备份中，请稍后...</span>
+                            </div>
+                            备份中，请稍后...
+                        </div>
+                        <form id="deviceForm" method="post" action="{% url 'conf_backup_add' %}">
+                            {% csrf_token %}
+                            <input type="hidden" id="selectedDevs" name="selected_devs">
+                        </form>
+                        <p style="text-align: right">
+                            <button id="confirmBtn" type="button" class="btn btn-warning">确 定</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">取 消</button>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <ul class="pagination" style="float: right">
+            {{ page_string }}
+        </ul>
+
+    </div>
+
+{% endblock %}
+
+{% block js %}
+    <script type="text/javascript">
+        var SELECT_DEVS = [];
+
+        $(function () {
+            // 页面框架加载完成之后代码自动执行
+            bindDevCheckBoxEvent();
+            bindBtnDevSelectEvent();
+            bindBtnSelConfigEvent();
+        })
+
+        function bindDevCheckBoxEvent() {
+            // 绑定全选框的 change 事件
+            $('#selectAll').change(function () {
+                var checked = $(this).prop('checked');
+                $('.deviceCheckbox').prop('checked', checked);
+                updateDevSelectedIds();// 更新 SELECT_DEVS
+            });
+            // 绑定单个复选框的 change 事件
+            $('.deviceCheckbox').change(function () {
+                updateDevSelectedIds(); // 每当单个复选框状态改变时，也更新 SELECT_IDS
+            });
+        }
+
+        function updateDevSelectedIds() {
+            // 清空 SELECT_IDS 数组
+            SELECT_DEVS = [];
+            // 遍历所有选中的复选框，并将它们的 value（即 dev.id）添加到 SELECT_IDS 数组中
+            $('.deviceCheckbox:checked').each(function () {
+                SELECT_DEVS.push(this.value);
+            });
+            $('#selectedDevs').val(SELECT_DEVS.join(',')); // 更新隐藏字段的值
+            // 可以在这里添加日志输出
+            console.log(SELECT_DEVS);
+        }
+
+        function bindBtnDevSelectEvent() {
+            $('#btnDevSel').click(function () {
+                // 在这里检查SELECT_IDS是否为空，并给出提示
+                if (SELECT_DEVS.length === 0) {
+                    alert('请选择设备！');
+                    return false; // 阻止模态框的打开
+                }
+                updateDevSelectedIds(); // 更新隐藏字段
+                // 点击按钮，显示对话框
+                $('#DevSelModal').modal('show')
+            })
+        }
+
+        function bindBtnSelConfigEvent() {
+            $('#confirmBtn').click(function (e) {
+                e.preventDefault(); // 阻止表单的默认提交行为
+                var selectedDevs = $('#selectedDevs').val(); // 获取选中的设备ID字符串
+                // 禁用按钮
+                $(this).prop('disabled', true);
+                // 显示加载指示器
+                $('#loadingSpinner').show();
+                // 使用AJAX提交表单数据
+                $.ajax({
+                    url: $('#deviceForm').attr('action'), // 获取表单的action URL
+                    type: 'POST',
+                    data: {
+                        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(), // 发送CSRF令牌
+                        selected_devs: selectedDevs // 发送选中的设备ID
+                    },
+                    success: function (response) {
+                        // 隐藏加载指示器
+                        $('#loadingSpinner').hide();
+                        // 处理AJAX响应
+                        if (response.success) {
+                            // 假设响应中包含成功信息
+                            alert('备份成功！'); // 可选：显示一个成功消息
+                            // 重定向到备份列表页面
+                            window.location.href = '/configBackup/list/'; // 修改为实际的URL
+                        } else {
+                            // 处理错误情况
+                            alert('备份失败：' + response.message); // 假设响应中包含错误信息
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // 隐藏加载指示器
+                        $('#loadingSpinner').hide();
+                        // 处理AJAX请求错误
+                        alert('请求失败：' + error);
+                    }
+                });
+            });
+        }
+
+
+    </script>
+{% endblock %}

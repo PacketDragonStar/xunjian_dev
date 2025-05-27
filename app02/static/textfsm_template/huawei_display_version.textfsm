@@ -1,0 +1,9 @@
+Value VERSION (\S+)
+Value MODEL (\S+)
+Value UPTIME (.+)
+Value SERIES (\S+)
+Value PATCH (\S+)
+
+Start
+  ^VRP \(R\) software, Version\s+${VERSION}\s+\(${SERIES}\s+${PATCH}\)
+  ^(HUAWEI|Huawei|Quidway)\s+${MODEL}\sRouting Switch\s+uptime\s+is\s+${UPTIME} -> Record

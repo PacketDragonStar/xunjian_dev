@@ -1,0 +1,12 @@
+Value Required OURADDR (\S+)
+Value Required NEIGHADDR (\S+)
+Value Required LD_RD (\S+)
+Value Required RH_RS (\S+)
+Value Required HOLDOWN_MULT (\S+)
+Value Required STATE (\S+)
+Value Required INT (\S+)
+Value Required VRF (\S+)
+Value Required TYPE (\S+)
+
+Start
+  ^${OURADDR}\s+${NEIGHADDR}\s+${LD_RD}\s+${RH_RS}\s+${HOLDOWN_MULT}\s+${STATE}\s+${INT}\s+${VRF}\s+${TYPE} -> Record

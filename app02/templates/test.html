@@ -1,0 +1,672 @@
+<html lang="en-us" dir="ltr" data-theme="light"><script id="allow-copy_script">(function agent() {
+    let unlock = false
+    document.addEventListener('allow_copy', (event) => {
+      unlock = event.detail.unlock
+    })
+
+    const copyEvents = [
+      'copy',
+      'cut',
+      'contextmenu',
+      'selectstart',
+      'mousedown',
+      'mouseup',
+      'mousemove',
+      'keydown',
+      'keypress',
+      'keyup',
+    ]
+    const rejectOtherHandlers = (e) => {
+      if (unlock) {
+        e.stopPropagation()
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation()
+      }
+    }
+    copyEvents.forEach((evt) => {
+      document.documentElement.addEventListener(evt, rejectOtherHandlers, {
+        capture: true,
+      })
+    })
+  })()</script><head>
+<title>Add group | Django site admin</title>
+<link rel="stylesheet" href="/static/admin/css/base.css">
+
+  <link rel="stylesheet" href="/static/admin/css/dark_mode.css">
+  <script src="/static/admin/js/theme.js" defer=""></script>
+
+
+  <link rel="stylesheet" href="/static/admin/css/nav_sidebar.css">
+  <script src="/static/admin/js/nav_sidebar.js" defer=""></script>
+
+<link rel="stylesheet" href="/static/admin/css/forms.css">
+
+
+<script src="/admin/jsi18n/"></script>
+<script src="/static/admin/js/vendor/jquery/jquery.js"></script>
+<script src="/static/admin/js/jquery.init.js"></script>
+<script src="/static/admin/js/core.js"></script>
+<script src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
+<script src="/static/admin/js/SelectBox.js"></script>
+<script src="/static/admin/js/actions.js"></script>
+<script src="/static/admin/js/SelectFilter2.js"></script>
+<script src="/static/admin/js/urlify.js"></script>
+<script src="/static/admin/js/prepopulate.js"></script>
+<script src="/static/admin/js/vendor/xregexp/xregexp.js"></script>
+
+
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <link rel="stylesheet" href="/static/admin/css/responsive.css">
+
+
+<meta name="robots" content="NONE,NOARCHIVE">
+<style data-id="immersive-translate-input-injected-css">.immersive-translate-input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 2147483647;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.immersive-translate-attach-loading::after {
+  content: " ";
+
+  --loading-color: #f78fb6;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: block;
+  margin: 12px auto;
+  position: relative;
+  color: white;
+  left: -100px;
+  box-sizing: border-box;
+  animation: immersiveTranslateShadowRolling 1.5s linear infinite;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-2000%, -50%);
+  z-index: 100;
+}
+
+.immersive-translate-loading-spinner {
+  vertical-align: middle !important;
+  width: 10px !important;
+  height: 10px !important;
+  display: inline-block !important;
+  margin: 0 4px !important;
+  border: 2px rgba(221, 244, 255, 0.6) solid !important;
+  border-top: 2px rgba(0, 0, 0, 0.375) solid !important;
+  border-left: 2px rgba(0, 0, 0, 0.375) solid !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  -webkit-animation: immersive-translate-loading-animation 0.6s infinite linear !important;
+  animation: immersive-translate-loading-animation 0.6s infinite linear !important;
+}
+
+@-webkit-keyframes immersive-translate-loading-animation {
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+
+  to {
+    -webkit-transform: rotate(359deg);
+  }
+}
+
+@keyframes immersive-translate-loading-animation {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(359deg);
+  }
+}
+
+
+.immersive-translate-input-loading {
+  --loading-color: #f78fb6;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: block;
+  margin: 12px auto;
+  position: relative;
+  color: white;
+  left: -100px;
+  box-sizing: border-box;
+  animation: immersiveTranslateShadowRolling 1.5s linear infinite;
+}
+
+@keyframes immersiveTranslateShadowRolling {
+  0% {
+    box-shadow: 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0);
+  }
+
+  12% {
+    box-shadow: 100px 0 var(--loading-color), 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0);
+  }
+
+  25% {
+    box-shadow: 110px 0 var(--loading-color), 100px 0 var(--loading-color), 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0);
+  }
+
+  36% {
+    box-shadow: 120px 0 var(--loading-color), 110px 0 var(--loading-color), 100px 0 var(--loading-color), 0px 0 rgba(255, 255, 255, 0);
+  }
+
+  50% {
+    box-shadow: 130px 0 var(--loading-color), 120px 0 var(--loading-color), 110px 0 var(--loading-color), 100px 0 var(--loading-color);
+  }
+
+  62% {
+    box-shadow: 200px 0 rgba(255, 255, 255, 0), 130px 0 var(--loading-color), 120px 0 var(--loading-color), 110px 0 var(--loading-color);
+  }
+
+  75% {
+    box-shadow: 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 130px 0 var(--loading-color), 120px 0 var(--loading-color);
+  }
+
+  87% {
+    box-shadow: 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 130px 0 var(--loading-color);
+  }
+
+  100% {
+    box-shadow: 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0);
+  }
+}
+
+
+.immersive-translate-search-recomend {
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
+  font-size: 16px;
+}
+
+.immersive-translate-search-enhancement-en-title {
+  color: #4d5156;
+}
+
+/* dark */
+@media (prefers-color-scheme: dark) {
+  .immersive-translate-search-recomend {
+    border: 1px solid #3c4043;
+  }
+
+  .immersive-translate-close-action svg {
+    fill: #bdc1c6;
+  }
+
+  .immersive-translate-search-enhancement-en-title {
+    color: #bdc1c6;
+  }
+}
+
+
+.immersive-translate-search-settings {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  cursor: pointer;
+}
+
+.immersive-translate-search-recomend::before {
+  /* content: " "; */
+  /* width: 20px; */
+  /* height: 20px; */
+  /* top: 16px; */
+  /* position: absolute; */
+  /* background: center / contain url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAxlBMVEUAAADpTInqTIjpSofnSIfqS4nfS4XqS4nqTIjsTYnrTInqTIroS4jvQIDqTIn////+/v7rSYjpTIn8/v7uaZzrTIr9/f3wfansWJL88/b85e73qc39+/v3xNnylrvrVI/98fb62Obva5/8+fr76vH4y9zpSIj74e353Oj1ocTzm77xhK/veKbtYpjsXJTqU47oTInxjrXyh7L99fj40eH2ttH1udD3sc31ssz1rMnykLXucqPtbqD85e/1xdn2u9DzqcXrUY6FaJb8AAAADnRSTlMA34BgIM8Q37/fz7+/EGOHcVQAAAGhSURBVDjLhZPncuowEEZFTW7bXVU7xsYYTO/p7bb3f6lICIOYJOT4h7/VnFmvrBFjrF3/CR/SajBHswafctG0Qg3O8O0Xa8BZ6uw7eLjqr30SofCDVSkemMinfL1ecy20r5ygR5zz3ArcAqJExPTPKhDENEmS30Q9+yo4lEQkqVTiIEAHCT10xWERRdH0Bq0aCOPZNDV3s0xaYce1lHEoDHU8wEh3qRJypNcTAeKUIjgKMeGLDoRCLVLTVf+Ownj8Kk6H9HM6QXPgYjQSB0F00EJEu10ILQrs/QeP77BSSr0MzLOyuJJQbnUoOOIUI/A8EeJk9E4YUHUWiRyTVKGgQUB8/3e/NpdGlfI+FMQyWsCBWyz4A/ZyHXyiiz0Ne5aGZssoxRmcChw8/EFKQ5JwwkUo3FRT5yXS7q+Y/rHDZmFktzpGMvO+5QofA4FPpEmGw+EWRCFvnaof7Zhe8NuYSLR0xErKLThUSs8gnODh87ssy6438yzbLzxl012HS19vfCf3CNhnbWOL1eEsDda+gDPUvri8tSZzNFrwIZf1NmNvqC1I/t8j7nYAAAAASUVORK5CYII='); */
+}
+
+.immersive-translate-search-title {}
+
+.immersive-translate-search-title-wrapper {}
+
+.immersive-translate-search-time {
+  font-size: 12px;
+  margin: 4px 0 24px;
+  color: #70757a;
+}
+
+.immersive-translate-expand-items {
+  display: none;
+}
+
+.immersive-translate-search-more {
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.immersive-translate-modal {
+  display: none;
+  position: fixed;
+  z-index: 2147483647;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.4);
+  font-size: 15px;
+}
+
+.immersive-translate-modal-content {
+  background-color: #fefefe;
+  margin: 10% auto;
+  padding: 40px 24px 24px;
+  border: 1px solid #888;
+  border-radius: 10px;
+  width: 80%;
+  max-width: 270px;
+  font-family: system-ui, -apple-system, "Segoe UI", "Roboto", "Ubuntu",
+    "Cantarell", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  position: relative
+}
+
+@media screen and (max-width: 768px) {
+  .immersive-translate-modal-content {
+    margin: 50% auto !important;
+  }
+}
+
+.immersive-translate-modal .immersive-translate-modal-content-in-input {
+  max-width: 500px;
+}
+.immersive-translate-modal-content-in-input .immersive-translate-modal-body {
+  text-align: left;
+  max-height: unset;
+}
+
+.immersive-translate-modal-title {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #333333;
+}
+
+.immersive-translate-modal-body {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 400;
+  color: #333333;
+  word-break: break-all;
+  margin-top: 24px;
+}
+
+@media screen and (max-width: 768px) {
+  .immersive-translate-modal-body {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+}
+
+.immersive-translate-close {
+  color: #666666;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.immersive-translate-close:hover,
+.immersive-translate-close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.immersive-translate-modal-footer {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.immersive-translate-btn {
+  width: fit-content;
+  color: #fff;
+  background-color: #ea4c89;
+  border: none;
+  font-size: 16px;
+  margin: 0 8px;
+  padding: 9px 30px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.immersive-translate-btn:hover {
+  background-color: #f082ac;
+}
+
+.immersive-translate-cancel-btn {
+  /* gray color */
+  background-color: rgb(89, 107, 120);
+}
+
+
+.immersive-translate-cancel-btn:hover {
+  background-color: hsl(205, 20%, 32%);
+}
+
+.immersive-translate-action-btn {
+  background-color: transparent;
+  color: #EA4C89;
+  border: 1px solid #EA4C89
+}
+
+.immersive-translate-btn svg {
+  margin-right: 5px;
+}
+
+.immersive-translate-link {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  text-decoration: none;
+  color: #007bff;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, .1);
+}
+
+.immersive-translate-primary-link {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  text-decoration: none;
+  color: #ea4c89;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, .1);
+}
+
+.immersive-translate-modal input[type="radio"] {
+  margin: 0 6px;
+  cursor: pointer;
+}
+
+.immersive-translate-modal label {
+  cursor: pointer;
+}
+
+.immersive-translate-close-action {
+  position: absolute;
+  top: 2px;
+  right: 0px;
+  cursor: pointer;
+}</style></head>
+
+<body class=" app-auth model-group change-form" data-admin-utc-offset="0">
+<a href="#content-start" class="skip-to-content-link">Skip to main content</a>
+<!-- Container -->
+<div id="container">
+
+
+    <!-- Header -->
+
+    <div id="header">
+        <div id="branding">
+
+<h1 id="site-name"><a href="/admin/">Django administration</a></h1>
+
+
+        </div>
+
+
+        <div id="user-tools">
+
+                Welcome,
+                <strong>admin</strong>.
+
+
+
+                    <a href="/">View site</a> /
+
+
+
+
+
+
+                <a href="/admin/password_change/">Change password</a> /
+
+                <form id="logout-form" method="post" action="/admin/logout/">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="DvKywhrIzRXCjn8tJTcepFxtA5Y5z5LdhsosFzhjkej9d7jykOzhVaIxpyQ3MUoz">
+                    <button type="submit">Log out</button>
+                </form>
+
+<button class="theme-toggle">
+  <div class="visually-hidden theme-label-when-auto">Toggle theme (current theme: auto)</div>
+  <div class="visually-hidden theme-label-when-light">Toggle theme (current theme: light)</div>
+  <div class="visually-hidden theme-label-when-dark">Toggle theme (current theme: dark)</div>
+  <svg aria-hidden="true" class="theme-icon-when-auto">
+    <use xlink:href="#icon-auto"></use>
+  </svg>
+  <svg aria-hidden="true" class="theme-icon-when-dark">
+    <use xlink:href="#icon-moon"></use>
+  </svg>
+  <svg aria-hidden="true" class="theme-icon-when-light">
+    <use xlink:href="#icon-sun"></use>
+  </svg>
+</button>
+
+
+        </div>
+
+
+
+    </div>
+
+    <!-- END Header -->
+
+      <nav aria-label="Breadcrumbs">
+
+<div class="breadcrumbs">
+<a href="/admin/">Home</a>
+› <a href="/admin/auth/">Authentication and Authorization</a>
+› <a href="/admin/auth/group/">Groups</a>
+› Add group
+</div>
+
+      </nav>
+
+
+
+    <div class="main shifted" id="main">
+
+
+
+<button class="sticky toggle-nav-sidebar" id="toggle-nav-sidebar" aria-label="Toggle navigation"></button>
+<nav class="sticky" id="nav-sidebar" aria-label="Sidebar" aria-expanded="true">
+  <input type="search" id="nav-filter" placeholder="Start typing to filter…" aria-label="Filter navigation items">
+
+
+
+
+    <div class="app-auth module current-app">
+      <table>
+        <caption>
+          <a href="/admin/auth/" class="section" title="Models in the Authentication and Authorization application">Authentication and Authorization</a>
+        </caption>
+
+          <tbody><tr class="model-group current-model">
+
+              <th scope="row"><a href="/admin/auth/group/" aria-current="page">Groups</a></th>
+
+
+
+              <td><a href="/admin/auth/group/add/" class="addlink">Add</a></td>
+
+
+
+          </tr>
+
+          <tr class="model-user">
+
+              <th scope="row"><a href="/admin/auth/user/">Users</a></th>
+
+
+
+              <td><a href="/admin/auth/user/add/" class="addlink">Add</a></td>
+
+
+
+          </tr>
+
+      </tbody></table>
+    </div>
+
+
+
+</nav>
+
+
+
+      <div id="content-start" class="content" tabindex="-1">
+
+
+
+        <!-- Content -->
+        <div id="content" class="colM">
+
+          <h1>Add group</h1>
+
+          <div id="content-main">
+
+
+
+<form method="post" id="group_form" novalidate=""><input type="hidden" name="csrfmiddlewaretoken" value="DvKywhrIzRXCjn8tJTcepFxtA5Y5z5LdhsosFzhjkej9d7jykOzhVaIxpyQ3MUoz">
+<div>
+
+
+
+
+    <p class="errornote">
+    Please correct the error below.
+    </p>
+
+
+
+
+
+  <fieldset class="module aligned ">
+
+
+
+        <div class="form-row errors field-name">
+            <ul class="errorlist"><li>This field is required.</li></ul>
+
+                <div>
+
+                        <div class="flex-container">
+
+                                <label class="required" for="id_name">Name:</label>
+
+                                    <input type="text" name="name" class="vTextField" maxlength="150" required="" id="id_name">
+
+
+                        </div>
+
+                </div>
+
+
+        </div>
+
+        <div class="form-row field-permissions">
+
+
+                <div>
+
+                        <div class="flex-container">
+
+                                <label for="id_permissions">Permissions:</label>
+
+                                    <div class="related-widget-wrapper" data-model-ref="permission">
+
+
+
+
+<div class="selector"><div class="selector-available"><h2>Available permissions <span class="help help-tooltip help-icon" title="This is the list of available permissions. You may choose some by selecting them in the box below and then clicking the &quot;Choose&quot; arrow between the two boxes."></span></h2><p id="id_permissions_filter" class="selector-filter"><label for="id_permissions_input"><span class="help-tooltip search-label-icon" title="Type into this box to filter down the list of available permissions."></span></label> <input type="text" placeholder="Filter" id="id_permissions_input"></p><select name="permissions_old" id="id_permissions_from" multiple="" class="filtered" data-field-name="permissions" data-is-stacked="0"><option value="1" title="admin | log entry | Can add log entry">admin | log entry | Can add log entry</option><option value="2" title="admin | log entry | Can change log entry">admin | log entry | Can change log entry</option><option value="3" title="admin | log entry | Can delete log entry">admin | log entry | Can delete log entry</option><option value="31" title="app02 | function_group_relationship_table | Can delete function_group_relationship_table">app02 | function_group_relationship_table | Can delete function_group_relationship_table</option><option value="33" title="app02 | function_table | Can add function_table">app02 | function_table | Can add function_table</option><option value="34" title="app02 | function_table | Can change function_table">app02 | function_table | Can change function_table</option><option value="35" title="app02 | function_table | Can delete function_table">app02 | function_table | Can delete function_table</option><option value="36" title="app02 | function_table | Can view function_table">app02 | function_table | Can view function_table</option><option value="37" title="app02 | group_table | Can add group_table">app02 | group_table | Can add group_table</option><option value="38" title="app02 | group_table | Can change group_table">app02 | group_table | Can change group_table</option><option value="39" title="app02 | group_table | Can delete group_table">app02 | group_table | Can delete group_table</option><option value="40" title="app02 | group_table | Can view group_table">app02 | group_table | Can view group_table</option><option value="57" title="app02 | item | Can add item">app02 | item | Can add item</option><option value="58" title="app02 | item | Can change item">app02 | item | Can change item</option><option value="59" title="app02 | item | Can delete item">app02 | item | Can delete item</option><option value="60" title="app02 | item | Can view item">app02 | item | Can view item</option><option value="61" title="app02 | my model | Can add my model">app02 | my model | Can add my model</option><option value="62" title="app02 | my model | Can change my model">app02 | my model | Can change my model</option><option value="63" title="app02 | my model | Can delete my model">app02 | my model | Can delete my model</option><option value="64" title="app02 | my model | Can view my model">app02 | my model | Can view my model</option><option value="41" title="app02 | result_notes_table | Can add result_notes_table">app02 | result_notes_table | Can add result_notes_table</option><option value="42" title="app02 | result_notes_table | Can change result_notes_table">app02 | result_notes_table | Can change result_notes_table</option><option value="43" title="app02 | result_notes_table | Can delete result_notes_table">app02 | result_notes_table | Can delete result_notes_table</option><option value="44" title="app02 | result_notes_table | Can view result_notes_table">app02 | result_notes_table | Can view result_notes_table</option><option value="45" title="app02 | result_overall_table | Can add result_overall_table">app02 | result_overall_table | Can add result_overall_table</option><option value="46" title="app02 | result_overall_table | Can change result_overall_table">app02 | result_overall_table | Can change result_overall_table</option><option value="47" title="app02 | result_overall_table | Can delete result_overall_table">app02 | result_overall_table | Can delete result_overall_table</option><option value="48" title="app02 | result_overall_table | Can view result_overall_table">app02 | result_overall_table | Can view result_overall_table</option><option value="49" title="app02 | result_specific_table | Can add result_specific_table">app02 | result_specific_table | Can add result_specific_table</option><option value="50" title="app02 | result_specific_table | Can change result_specific_table">app02 | result_specific_table | Can change result_specific_table</option><option value="51" title="app02 | result_specific_table | Can delete result_specific_table">app02 | result_specific_table | Can delete result_specific_table</option><option value="52" title="app02 | result_specific_table | Can view result_specific_table">app02 | result_specific_table | Can view result_specific_table</option><option value="9" title="auth | group | Can add group">auth | group | Can add group</option><option value="10" title="auth | group | Can change group">auth | group | Can change group</option><option value="11" title="auth | group | Can delete group">auth | group | Can delete group</option><option value="12" title="auth | group | Can view group">auth | group | Can view group</option><option value="5" title="auth | permission | Can add permission">auth | permission | Can add permission</option><option value="6" title="auth | permission | Can change permission">auth | permission | Can change permission</option><option value="7" title="auth | permission | Can delete permission">auth | permission | Can delete permission</option><option value="8" title="auth | permission | Can view permission">auth | permission | Can view permission</option><option value="13" title="auth | user | Can add user">auth | user | Can add user</option><option value="14" title="auth | user | Can change user">auth | user | Can change user</option><option value="15" title="auth | user | Can delete user">auth | user | Can delete user</option><option value="16" title="auth | user | Can view user">auth | user | Can view user</option><option value="17" title="contenttypes | content type | Can add content type">contenttypes | content type | Can add content type</option><option value="18" title="contenttypes | content type | Can change content type">contenttypes | content type | Can change content type</option><option value="19" title="contenttypes | content type | Can delete content type">contenttypes | content type | Can delete content type</option><option value="20" title="contenttypes | content type | Can view content type">contenttypes | content type | Can view content type</option><option value="53" title="sessions | session | Can add session">sessions | session | Can add session</option><option value="54" title="sessions | session | Can change session">sessions | session | Can change session</option><option value="55" title="sessions | session | Can delete session">sessions | session | Can delete session</option><option value="56" title="sessions | session | Can view session">sessions | session | Can view session</option></select><a title="Click to choose all permissions at once." href="#" id="id_permissions_add_all_link" class="selector-chooseall active">Choose all</a></div><ul class="selector-chooser"><li><a title="Choose" href="#" id="id_permissions_add_link" class="selector-add">Choose</a></li><li><a title="Remove" href="#" id="id_permissions_remove_link" class="selector-remove active">Remove</a></li></ul><div id="id_permissions_selector_chosen" class="selector-chosen"><h2>Chosen permissions <span class="help help-tooltip help-icon" title="This is the list of chosen permissions. You may remove some by selecting them in the box below and then clicking the &quot;Remove&quot; arrow between the two boxes."></span></h2><p id="id_permissions_filter_selected" class="selector-filter"><label for="id_permissions_selected_input"><span class="help-tooltip search-label-icon" title="Type into this box to filter down the list of selected permissions."></span></label> <input type="text" placeholder="Filter" id="id_permissions_selected_input"></p><select id="id_permissions_to" multiple="" size="0" name="permissions" class="filtered"><option value="4" title="admin | log entry | Can view log entry">admin | log entry | Can view log entry</option><option value="21" title="app02 | device_group_relationship_table | Can add device_group_relationship_table">app02 | device_group_relationship_table | Can add device_group_relationship_table</option><option value="22" title="app02 | device_group_relationship_table | Can change device_group_relationship_table">app02 | device_group_relationship_table | Can change device_group_relationship_table</option><option value="24" title="app02 | device_group_relationship_table | Can view device_group_relationship_table">app02 | device_group_relationship_table | Can view device_group_relationship_table</option><option value="25" title="app02 | device_table | Can add device_table">app02 | device_table | Can add device_table</option><option value="23" title="app02 | device_group_relationship_table | Can delete device_group_relationship_table">app02 | device_group_relationship_table | Can delete device_group_relationship_table</option><option value="26" title="app02 | device_table | Can change device_table">app02 | device_table | Can change device_table</option><option value="27" title="app02 | device_table | Can delete device_table">app02 | device_table | Can delete device_table</option><option value="28" title="app02 | device_table | Can view device_table">app02 | device_table | Can view device_table</option><option value="29" title="app02 | function_group_relationship_table | Can add function_group_relationship_table">app02 | function_group_relationship_table | Can add function_group_relationship_table</option><option value="30" title="app02 | function_group_relationship_table | Can change function_group_relationship_table">app02 | function_group_relationship_table | Can change function_group_relationship_table</option><option value="32" title="app02 | function_group_relationship_table | Can view function_group_relationship_table">app02 | function_group_relationship_table | Can view function_group_relationship_table</option></select><div class="list-footer-display"><span id="id_permissions_list-footer-display-text">0 selected options not visible</span><span class="list-footer-display__clear"> (click to clear)</span></div><a title="Click to remove all chosen permissions at once." href="#" id="id_permissions_remove_all_link" class="selector-clearall active">Remove all</a></div></div></div>
+
+
+                        </div>
+
+                        <div class="help" id="id_permissions_helptext">
+                            <div>Hold down “Control”, or “Command” on a Mac, to select more than one.</div>
+                        </div>
+
+                </div>
+
+
+        </div>
+
+</fieldset>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="submit-row">
+
+<input type="submit" value="Save" class="default" name="_save">
+
+<input type="submit" value="Save and add another" name="_addanother">
+<input type="submit" value="Save and continue editing" name="_continue">
+
+
+
+</div>
+
+
+
+    <script id="django-admin-form-add-constants" src="/static/admin/js/change_form.js" data-model-name="group" async="">
+    </script>
+
+
+
+
+<script id="django-admin-prepopulated-fields-constants" src="/static/admin/js/prepopulate_init.js" data-prepopulated-fields="[]">
+</script>
+
+
+</div>
+</form></div>
+
+
+          <br class="clear">
+        </div>
+        <!-- END Content -->
+        <div id="footer"></div>
+      </div>
+    </div>
+</div>
+<!-- END Container -->
+
+<!-- SVGs -->
+<svg xmlns="http://www.w3.org/2000/svg" class="base-svgs">
+  <symbol viewBox="0 0 24 24" width="1rem" height="1rem" id="icon-auto"><path d="M0 0h24v24H0z" fill="currentColor"></path><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2V4a8 8 0 1 0 0 16z"></path></symbol>
+  <symbol viewBox="0 0 24 24" width="1rem" height="1rem" id="icon-moon"><path d="M0 0h24v24H0z" fill="currentColor"></path><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"></path></symbol>
+  <symbol viewBox="0 0 24 24" width="1rem" height="1rem" id="icon-sun"><path d="M0 0h24v24H0z" fill="currentColor"></path><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"></path></symbol>
+</svg>
+<!-- END SVGs -->
+
+
+</body><div id="immersive-translate-popup" style="all: initial"></div></html>

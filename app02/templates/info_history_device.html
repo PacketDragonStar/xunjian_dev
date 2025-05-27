@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href ="{% static 'plugins/bootstrap-5.3.0/css/bootstrap.css' %}">
+    <style>
+         .hidden-column {
+        display: none; /*隐藏列*/
+    }
+           .con1{
+               height: max-content;
+    width:300px;
+
+  }
+                   .con2{
+    height:100px;
+    width:700px;
+
+  }
+
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container">
+  <ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link active" aria-current="page" href="/info/list/">巡检系统</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#">巡检</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link active" aria-current="page" href="/search/history/">巡检历史</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link disabled">帮助</a>
+  </li>
+</ul>
+        </div>
+</nav>
+
+
+
+
+
+<div class="container">
+<div>{{ time }}</div>
+     <div class="con" style="background-color:  #b3e6ff;float: left ">
+          {% for item in row_obj1 %}
+              {% csrf_token %}
+              <div>
+         <a href="/display/history1/?nid1={{item.name}}&nid2={{ time }}" >{{ item.name }}</a>
+              </div>
+          {% endfor %}
+    </div>
+
+</div>
+
+</body>
+
+</html>

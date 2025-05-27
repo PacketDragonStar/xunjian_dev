@@ -1,0 +1,210 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/font-awesome-4.7.0/css/font-awesome.min.css' %}">
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            background-image: url('../static/img/login_bg_white.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: left center;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #global {
+            margin: 0;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 120px;
+            width: 415px;
+            display: flex;
+            align-items: center;
+
+        }
+
+        .content {
+            box-shadow: 0 0 20px 0 rgb(0 0 0 / 20%);
+            border-radius: 6px;
+            position: absolute;
+            margin:  auto auto auto auto;
+            width: 100%;
+            height: 380px;
+            min-height: 300px;
+            background: #FFFFFF;
+
+        }
+
+        .loginBox {
+            padding: 44px 80px;
+        }
+
+        .title {
+            padding: 0 25px;
+            display: flex;
+        }
+
+        .active {
+            font-size: 28px;
+            color: rgba(0, 0, 0, 90%);
+            border-bottom: 4px solid #2A50D7;
+        }
+
+        .titleBox {
+            padding: 22px 16px;
+            font-size: 24px;
+            text-align: center;
+            line-height: 32px;
+            font-weight: 400;
+            width: fit-content;
+            box-sizing: border-box;
+        }
+
+        .form {
+            padding: 0 25px;
+        }
+
+        .ivu-form-item-content {
+            min-height: 32px;
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: flex-start;
+            justify-content: center;
+            line-height: 22px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, .9);
+            word-break: break-word;
+        }
+
+        .inputBox {
+            width: 100%;
+            display: flex;
+
+            height: 40px;
+            margin-bottom: 5px;
+
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center; /* 垂直居中图标和输入框 */
+            border-bottom: 1px solid #EAEAE9; /* 应用下划线到包裹容器 */
+            padding-bottom: 5px; /* 可选，为了增加下划线和输入框之间的空间 */
+
+        }
+
+        .input-item {
+            flex-grow: 1; /* 允许输入框占据剩余空间 */
+            border: none; /* 移除默认边框 */
+            padding: 10px; /* 内边距 */
+            font-size: 14px;
+            outline: none;
+        }
+
+
+        .input-item::placeholder {
+            text-transform: uppercase;
+        }
+
+        .ivu-btn {
+            text-align: center;
+            margin-top: 10px;
+            width: 100%;
+            height: 32px;
+            margin-right: 0;
+            padding: 4px 15px;
+            font-size: 14px;
+            border-radius: 3px;
+
+
+        }
+
+        .ivu-btn-primary {
+            color: rgba(255, 255, 255, .9);
+            background-color: #2a50d7;
+            border-color: #2a50d7;
+        }
+
+        #logo {
+            height: 56px;
+
+        }
+
+        .browser {
+            padding: 22px 38px;
+            text-align: center;
+            font-size: 14px;
+            margin-top: 12px;
+            border-radius: 0 0 6px 6px;
+            color: rgba(0, 0, 0, 0.60);
+            background: #F4F4F4;
+        }
+
+    </style>
+</head>
+<body>
+<div style="position: absolute;top: 50px;left: 40px;">
+    <img id="logo" src="../static/img/联通标识中英双语横版.png" alt="">
+</div>
+<div id="global">
+
+    <div class="content">
+        <div class="loginBox">
+            <div class="title">
+                <div class="titleBox active">
+                    用户登录
+                </div>
+            </div>
+
+            <form class="form" style="margin-top: 28px" method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="inputBox">
+                    <div class="input-wrapper">
+                        <i class="fa fa-user-o fa-fw" aria-hidden="true"></i>
+                        {{ form.username }}
+                    </div>
+
+                </div>
+                <span style="color: red;">{{ form.username.errors.0 }}</span>
+                <div class="inputBox">
+                    <div class="input-wrapper">
+                        <i class="fa fa-key fa-fw"></i>
+                        {{ form.password }}
+                    </div>
+                </div>
+                <span style="color: red;">{{ form.password.errors.0 }}</span>
+
+                <input type="submit" value="登 录" class="ivu-btn ivu-btn-primary" style="max-width: unset">
+            </form>
+
+        </div>
+        <div class="browser">
+            推荐使用的浏览器及版本：Chrome 70、Firefox 78及以上版本。最低分辨率显示宽度为1600。
+        </div>
+    </div>
+</div>
+<script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+<script src="{% static 'plugins/bootstrap-3.4.1/js/bootstrap.min.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>查看配置备份</title>
+</head>
+<body>
+
+    <h1>配置备份详情</h1>
+
+    <p>设备: {{ backup.dev }}</p>
+
+    <p>命令: {{ backup.cmd }}</p>
+
+    <p>创建时间: {{ backup.created_time }}</p>
+
+    <pre>{{ file_content }}</pre>
+
+</body>
+</html>

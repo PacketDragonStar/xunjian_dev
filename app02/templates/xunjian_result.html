@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block content %}
+  {% if time %}
+
+         <a>{{ time }}</a>
+       <h5>已完成{{  flag}}台设备巡检</h5>
+    <a href="/search/history">查看巡检结果</a>
+         {% else %}
+         <a>巡检失败，请检查</a>
+     {% endif %}
+{% endblock %}
+
+{% block js %}
+{% endblock %}

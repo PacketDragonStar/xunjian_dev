@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block content %}
+<div class="flex-container">
+ <div class="container">
+  {% if time %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item active" aria-current="page">{{ time }}</li>
+  </ol>
+</nav>
+{% endif %}
+
+ {% if con %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/info/history/?nid={{time}}">{{ time }}</a></li>
+    <li class="breadcrumb-item"><a href="/info/history/?nid={{time}}">{{ device }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ con }}</li>
+  </ol>
+</nav>
+
+
+ {% endif %}
+ </div>
+
+
+
+
+</div>
+<div class="flex-container">
+<div class="container">
+    <div class="con3" >
+             {% for item in row_obj13 %}
+
+              {{ item.notes }}
+
+            {% endfor %}
+            {{ tag }}
+    </div>
+     <div class="con2" >
+         {% csrf_token %}
+             {% if con and time and device %}
+                 <a class="btn btn-default" href="/text/compare/?nid={{ con }}&nid3={{ time }}&nid4={{ device }}" role="button">与基线对比</a>
+             {% endif %}
+
+      </div>
+  <div class="con3" >
+            {% if notes %}
+
+              {{ notes }}
+
+             {% endif %}
+  </div>
+    {% if s1 %}
+
+               <pre  style="white-space: pre-wrap">{{ s1 }}</pre>
+
+             {% endif %}
+
+
+             {%if con and time and device%}
+                 <a class="btn btn-default" href="/confirm/notes/?nid1={{ time }}&nid2={{ device }}&nid3={{ con}}" role="button">确认</a>
+        {% endif %}
+	<a class="btn btn-default" href="/confirm/all/?nid1={{ time }}" role="button">一键确认</a>
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+{% endblock %}
+
+{% block js %}
+{% endblock %}

@@ -1,0 +1,12 @@
+Value interface (\S+)
+Value phy_state ((\S+|\S+ DOWN))
+Value protocol_state (\S+)
+Value desc (.*)
+Value last_phy_uptime (.+)
+
+Start
+ ^${interface}\s+current state : ${phy_state}
+ ^Line protocol current state : ${protocol_state}
+ ^Description:${desc}
+ ^Last physical up time   : ${last_phy_uptime}
+ ^$$ -> Record

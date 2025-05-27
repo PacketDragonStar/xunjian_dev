@@ -1,0 +1,131 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block content %}
+
+
+
+
+
+<div class="flex-container">
+ <div class="container">
+
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+       {% if time %}
+    <li class="breadcrumb-item"><a href="/peizhiguanli/device/?nid={{time}}">{{ time }}</a></li>
+      {% endif %}
+    {% if device %}
+    <li class="breadcrumb-item"><a href="/peizhiguanli/con/?nid={{time}}&nid1={{ device }}">{{ device }}</a></li>
+  {% endif %}
+  {% if con %}
+  <li class="breadcrumb-item active" aria-current="page">{{ con }}</li>
+  {% endif %}
+  </ol>
+</nav>
+
+
+
+
+  {% for item in unique_devices %}
+      <li >
+               <a  class="{% if item.device in highlighted_names %}highlight-red{% endif %}" href="/peizhiguanli/con/?nid={{time}}&nid1={{ item.device }}">{{ item.device }}</a>
+     </li>
+            {% endfor %}
+
+ {% for item in occ1 %}
+                <li><a  class="{% if item in highlighted_names %}highlight-red{% endif %}" href="/peizhiguanli/result/?nid={{ item }}&nid3={{ time }}&nid4={{ device }}"   >{{ item }}</a></li>
+            {% endfor %}
+    {% if ddata %}
+        <pre  style="white-space: pre-wrap">{{ddata }}</pre>
+  {% endif %}
+ </div>
+
+
+
+ </div>
+
+
+
+
+<div class="flex-container">
+<div class="container">
+    <div class="con3" >
+             {% for item in row_obj13 %}
+
+              {{ item.notes }}
+
+            {% endfor %}
+    </div>
+     <div class="con2" >
+         {% csrf_token %}
+             {% if con and time and device %}
+                 <a class="btn btn-default" href="/text/compare/?nid={{ con }}&nid3={{ time }}&nid4={{ device }}" role="button">与基线对比</a>
+             {% endif %}
+
+      </div>
+  <div class="con3" >
+            {% if notes %}
+
+              {{ notes }}
+
+             {% endif %}
+  </div>
+    {% if s1 %}
+
+               <pre  style="white-space: pre-wrap">{{ s1 }}</pre>
+
+             {% endif %}
+
+
+             {%if con and time and device%}
+                 <a class="btn btn-default" href="/confirm/notes/?nid1={{ time }}&nid2={{ device }}&nid3={{ con}}" role="button">确认</a>
+        {% endif %}
+    </div>
+
+
+</div>
+{# {% if time %}#}
+{#        <div class="con" style="background-color:  yellow;float: left ">{{ time }}  ></div>#}
+{#{% endif %}#}
+{#     {% if device %}#}
+{#    <div class="con" style="background-color:  greenyellow;float: left">{{ device }}  ></div>#}
+{#{% endif %}#}
+{# {% if con %}#}
+{#         <div class="con" style="background-color:  deepskyblue;float: left ">{{ con }}  ></div>#}
+{#{% endif %}#}
+
+
+
+
+
+{#<div class="container">#}
+{#     <div class="con" style="background-color:  #b3e6ff;float: left ">#}
+{#          {% for item in row_obj1 %}#}
+{#              {% csrf_token %}#}
+{#              <div>#}
+{#         <a href="/display/history1/?nid1={{item.device}}&nid2={{ time }}" >{{ item.device }}</a>#}
+{#              </div>#}
+{#          {% endfor %}#}
+{#    </div>#}
+{#    <div class="con1" style="background-color:  #b3e6ff;float: left ">#}
+{#          {% for item in obj %}#}
+{#              {% csrf_token %}#}
+{#              <div>#}
+{#         <a href="/display/history/?nid={{item }}&nid3={{ time }}&nid4={{ device }}" >{{ item}}</a>#}
+{#              </div>#}
+{#          {% endfor %}#}
+{#    </div>#}
+
+
+
+</div>
+</body>
+
+
+</html>
+{% endblock %}
+
+{% block js %}
+{% endblock %}

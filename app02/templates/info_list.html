@@ -1,0 +1,243 @@
+{#{% load static %}#}
+{#<!DOCTYPE html>#}
+{#<html lang="en">#}
+{#<head>#}
+{#    <meta charset="UTF-8">#}
+{#    <title>巡检系统</title>#}
+{#    <link rel="stylesheet" href="{% static 'plugins/bootstrap-4.6.2-dist/css/bootstrap.css' %}">#}
+{#    <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.css' %}">#}
+{#    <style>#}
+{#        .hidden-column {#}
+{#            display: none; /*隐藏列*/#}
+{#        }#}
+{##}
+{#        .progress {#}
+{#            width: 50%;#}
+{#            margin: 20px auto;#}
+{#        }#}
+{##}
+{#        .progress-bar {#}
+{#            background-color: #007bff;#}
+{#            height: 30px;#}
+{#            line-height: 30px;#}
+{#            text-align: center;#}
+{#            color: white;#}
+{#        }#}
+{##}
+{#        .con111 {#}
+{#            display: grid;#}
+{#            align-items: center; /* 垂直居中 */#}
+{#            height: 100px; /* 或者其他高度 */#}
+{#            height: 80px;#}
+{#            gap: 50px;#}
+{#        }#}
+{#        .btn-outline-primary + .btn-outline-primary {#}
+{#            margin-left: 10px; /* 根据需要调整间距大小 */#}
+{#        }#}
+{##}
+{##}
+{##}
+{##}
+{#    </style>#}
+{#    <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>#}
+{#</head>#}
+{#<body>#}
+
+{% extends "layout_1.html" %}
+{% load static %}
+
+{% block content %}
+
+
+<div class="container">
+    <div class="con111">
+        <h5>
+            <a href="/info/xunjian/">
+                <input type="button" value="开始巡检" class="btn btn-outline-primary"/>
+            </a>
+            <a href="/device/add/">
+                <input type="button" value="添加设备" class="btn btn-outline-primary"/>
+            </a>
+            <a href="/group/add/">
+                <input type="button" value="添加设备组" class="btn btn-outline-primary"/>
+            </a>
+             <a href="/func/add/">
+                <input type="button" value="添加巡检函数" class="btn btn-outline-primary"/>
+            </a>
+             <a href="/bound/funcgroup/">
+                <input type="button" value="绑定巡检函数" class="btn btn-outline-primary"/>
+            </a>
+            <a href="/info/xunjian/">
+                <input type="button" value="巡检" class="btn btn-outline-primary"/>
+            </a>
+            <a href="/test/test/">
+                <input type="button" value="test" class="btn btn-outline-primary"/>
+            </a>
+
+             <a href="/test/add/">
+                <input type="button" value="testadd" class="btn btn-outline-primary"/>
+            </a>
+        </h5>
+       <form method="GET" action="{% url "xunjiantest" %}">
+             <label for="func">巡检组</label>
+    <div>
+     <select name="selected_value" id="dropdown">
+         {% for group in group_list %}
+               <option value="{{group.group_name}}">{{group.group_name}}</option>
+            {% endfor %}
+     </select>
+    </div>
+    <button type="submit">提交</button>
+</form>
+                <a href="/info/xunjiantest/">
+                <input type="button" value="巡检测试" class="btn btn-outline-primary"/>
+            </a>
+
+        </div>
+</div>
+<div class="container">
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th scope="col" class="hidden-column">序号</th>
+            <th scope="col">设备名称</th>
+            <th scope="col">设备IP</th>
+            <th scope="col">设备组</th>
+            <th scope="col">设备类型</th>
+            <th scope="col" class="hidden-column">用户名</th>
+            <th scope="col" class="hidden-column">密码</th>
+            <th scope="col">编辑</th>
+            <th scope="col">删除</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for item in data_list %}
+            <tr>
+                <th scope="row" class="hidden-column">{{ item.id }}</th>
+                <td>{{ item.device}}</td>
+                <td>{{ item.ip }}</td>
+                <td>{{ item.group_name }}</td>
+                <td>{{ item.device_type }}</td>
+                <td class="hidden-column">{{ item.user }}</td>
+                <td class="hidden-column">{{ item.password }}</td>
+                <td>
+                    <a href="/info/{{ item.id }}/edit/">
+                        <button type="button" class="btn btn-outline-primary btn-sm">编辑</button></a>
+                </td>
+                <td>
+                    </a>
+                    <a href="/device/delete/?nid={{ item.id }}">
+                        <button type="button" class="btn btn-outline-danger btn-sm">删除</button>
+                    </a>
+
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+
+{#<div class="container">#}
+{#    <table class="table table-bordered">#}
+{#        <thead>#}
+{#        <tr>#}
+{#            <th scope="col" class="hidden-column">序号</th>#}
+{#            <th scope="col">函数名</th>#}
+{#            <th scope="col">命令</th>#}
+{#            <th scope="col">编辑</th>#}
+{#            <th scope="col">删除</th>#}
+{#        </tr>#}
+{#        </thead>#}
+{#        <tbody>#}
+{#        {% for item in data_list1 %}#}
+{#            <tr>#}
+{#                <th scope="row" class="hidden-column">{{ item.id }}</th>#}
+{#                <td>{{ item.func}}</td>#}
+{#                <td>{{ item.command }}</td>#}
+{#                <td>#}
+{#                    <a href="/func/{{ item.id }}/edit/">#}
+{#                        <button type="button" class="btn btn-outline-primary btn-sm">编辑</button></a>#}
+{#                </td>#}
+{#                <td>#}
+{#                    </a>#}
+{#                    <a href="/func/delete/?nid={{ item.id }}">#}
+{#                        <button type="button" class="btn btn-outline-danger btn-sm">删除</button>#}
+{#                    </a>#}
+{##}
+{#                </td>#}
+{#            </tr>#}
+{#        {% endfor %}#}
+{#    </table>#}
+{#</div>#}
+
+<div class="container">
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th scope="col" >序号</th>
+            <th scope="col">组名</th>
+            <th scope="col">编辑</th>
+            <th scope="col">删除</th>
+        </tr>
+        </thead>
+        {% for item in data_list2 %}
+            <tr>
+                <th scope="row" >{{ item.id }}</th>
+                <td>{{ item.group_name}}</td>
+                <td>        <a href="/boundfunc/edit/?nid={{ item.id }}">
+                        <button type="button" class="btn btn-outline-danger btn-sm">编辑</button>
+                    </a></td>
+                <td>删除</td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+
+{#<div class="container">#}
+{#    <table class="table table-bordered">#}
+{#        <thead>#}
+{#        <tr>#}
+{#            <th scope="col" class="hidden-column">序号</th>#}
+{#            <th scope="col">func</th>#}
+{#            <th scope="col">group</th>#}
+{#            <th scope="col">删除</th>#}
+{#        </tr>#}
+{#        </thead>#}
+{#        {% for item in data_list3 %}#}
+{#            <tr>#}
+{#                <th scope="row" class="hidden-column">{{ item.id }}</th>#}
+{#                <td>{{ item.func}}</td>#}
+{#                <td>{{ item.group_id}}</td>#}
+{#                <td>        <a href="/boundfg/delete/?nid={{ item.id }}">#}
+{#                        <button type="button" class="btn btn-outline-danger btn-sm">删除</button>#}
+{#                    </a></td>#}
+{#            </tr>#}
+{#        {% endfor %}#}
+{#    </table>#}
+{#</div>#}
+{#<div id="log-output"></div>#}
+
+{% endblock %}
+<script>
+        var eventSource = new EventSource('/path-to-log-streaming-view/');
+
+        eventSource.onmessage = function(event) {
+            console.log(event.data);
+            document.getElementById('log-output').textContent += event.data + '\n';
+        };
+
+        eventSource.onerror = function(event) {
+            console.error('EventSource failed:', event);
+            // 可能需要重新连接
+        };
+    </script>
+{% block js %}
+
+
+{% endblock %}
+{##}
+{#<script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>#}
+{#<script src="{% static 'plugins/bootstrap-3.4.1/js/bootstrap.min.js' %}"></script>#}
+{#<script type="text/javascript">#}
+{##}
+{#</script>#}
+{#</html>#}

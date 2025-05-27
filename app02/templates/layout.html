@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.min.css' %}">
+    <style>
+        .navbar {
+            border-radius: 0;
+        }
+
+        .dropdown-menu {
+            min-width: 85px;
+            text-align: center;
+        }
+        .hidden-column {
+             display: none; /*隐藏列*/
+         }
+
+        #logo {
+            margin: 8px 15px auto auto;
+            height: 36px;
+        }
+
+        .navbar-default .navbar-nav > li > a:hover {
+            color: #333;
+            background-color: #e7e7e7;
+        }
+
+        .dropdown-menu-up {
+            top: auto !important; /* 取消默认的顶部位置 */
+            bottom: 100%; /* 将下拉菜单定位到其触发元素的底部 */
+            margin-top: 0; /* 移除默认的顶部外边距 */
+
+        }
+        .highlight-red {
+    color: red; /* 设置文本颜色为红色 */
+}
+
+    </style>
+    {% block css %}{% endblock %}
+</head>
+<body>
+
+<div class="navbar navbar-default">
+    <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <div class="nav navbar-nav">
+                <a href="/search/history">
+                    <img id="logo" src="{% static 'img/联通标识中英双语横版.png' %}" alt="">
+                </a>
+            </div>
+
+        </div>
+
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-left">
+                <li><a href="/search/history/">网络巡检 </a></li>
+                <li><a href="/host/list/">主机巡检 </a></li>
+                <li><a href="/logBackup/list">配置备份 </a></li>
+		 {% if request.session.info.name == "admin" %}
+{#                <li><a href="/search/history/">巡检历史 </a></li>#}
+                <li><a href="/device/list/">设备管理 </a></li>
+                <li><a href="/admin/list/">人员管理 </a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                       aria-expanded="false">测试项 <span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/depart/list/">部门管理 <span class="sr-only">(current)</span></a>
+                        </li>
+                        <li><a href="/func/list/">函数管理<span class="sr-only">(current)</span></a>
+                        </li>
+                        <li><a href="/fbounc/list/">绑定函数组 <span class="sr-only">(current)</span></a>
+                        </li>
+{#                        <li><a href="/upload/list/">城市管理 <span class="sr-only">(current)</span></a>#}
+{#                        </li>#}
+{#                        <li><a href="/upload/form/">Form上传 <span class="sr-only">(current)</span></a>#}
+{#                        </li>#}
+{#                        <li><a href="/upload/modalForm/">ModalForm上传 <span class="sr-only">(current)</span></a>#}
+{#                        </li>#}
+                    </ul>
+                </li>
+    {% endif %}
+            </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+                {#                <li><a href="/login/">登录</a></li>#}
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                       aria-expanded="false">{{ request.session.info.name }} <span class="caret"></span></a>
+
+                    <ul class="dropdown-menu">
+{#                        <li><a href="#">个人资料</a></li>#}
+{#                        <li><a href="/admin/list/">账号信息</a></li>#}
+                        <li><a href="/admin/{{ request.session.info.id }}/reset/">更改密码</a></li>
+                        <li role="separator" class="divider"></li>
+                        <li><a href="/logout/">注销</a></li>
+                    </ul>
+
+                </li>
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+</div>
+
+<div>
+    {% block content %}{% endblock %}
+</div>
+
+<script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+<script src="{% static 'plugins/bootstrap-3.4.1/js/bootstrap.min.js' %}"></script>
+
+{% block js %}{% endblock %}
+</body>
+</html>

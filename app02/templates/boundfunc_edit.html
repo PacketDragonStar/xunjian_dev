@@ -1,0 +1,57 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href ="{% static 'plugins/bootstrap-5.3.0/css/bootstrap.css' %}">
+    <style>
+    .container {
+
+    }
+    .div1, .div2 {
+        float: left;
+        width: 45%; /* 或者你可以设置具体的宽度 */
+    }
+        .div3-container {
+        display: flex;
+        justify-content: center; /* 水平居中 */
+        align-items: center; /* 垂直居中 */
+    }
+    .div3{
+        float: left;
+        width: 10%; /* 或者你可以设置具体的宽度 */
+    }
+
+</style>
+</head>
+<body>
+<div class="container">
+<form method="post">
+{% csrf_token %}
+    <div class="div1">
+        <label for="func">所有函数</label>
+        <select multiple name="func" id="func"  class="form-control" size="20">
+            {% for func in func_list %}
+                <option value="{{ func.func }}">{{ func.func }}</option>
+            {% endfor %}
+        </select>
+    </div>
+<div class="div3"> <button type="submit"  id="button1" class="button-class">确定</button></div>
+    <div class="div3"> <button type="submit"  name ='button2' class="button-class">绑定</button></div>
+
+  <label for="func">已绑定的函数</label>
+        <select multiple name="func1" id="func1"  class="form-control" size="20">
+             {% for func in func_list1 %}
+                <option value="{{ func.func }}">{{ func.func }}</option>
+            {% endfor %}
+        </select>
+
+</form>
+</div>
+
+</body>
+
+
+</html>

@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% load static %}
+    <style>
+    .diff-container {
+    width: 100%;
+    display: flex;
+    overflow: hidden; /* 防止内容溢出容器 */
+}
+
+.diff-container table {
+    width: 100% !important; /* 强制表格宽度为100% */
+    display: block; /* 使表格块状显示 */
+    overflow-x: auto; /* 如果表格内容超出，允许水平滚动 */
+}
+
+.diff-container table th, .diff-container table td {
+    white-space: nowrap; /* 防止表格内容换行 */
+    overflow: hidden; /* 防止内容溢出单元格 */
+    text-overflow: ellipsis; /* 超出部分显示省略号 */
+}
+.diff-container .diff {
+    width: 50%; /* 左右两侧各占50%的宽度 */
+    overflow-y: auto; /* 如果内容超出，则显示垂直滚动条 */
+}
+</style>
+
+{% block content %}
+
+<div class="flex-container">
+    <div class="container">
+        {% if time %}
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active" aria-current="page">{{ time }}</li>
+                </ol>
+            </nav>
+        {% endif %}
+        {% if con %}
+            <nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+       {% if time %}
+    <li class="breadcrumb-item"><a href="/peizhiguanli/device/?nid={{time}}">{{ time }}</a></li>
+      {% endif %}
+    {% if device %}
+    <li class="breadcrumb-item"><a href="/peizhiguanli/con/?nid={{time}}&nid1={{ device }}">{{ device }}</a></li>
+  {% endif %}
+  {% if con %}
+  <li class="breadcrumb-item active" aria-current="page">{{ con }}</li>
+  {% endif %}
+  </ol>
+</nav>
+        {% endif %}
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <h1>基线对比</h1>
+
+</div>
+        <div class="diff">{{ diff_html|safe }}</div>
+    </div>
+
+
+
+</body>
+</html>
+{% endblock %}
+
+{% block js %}
+{% endblock %}
