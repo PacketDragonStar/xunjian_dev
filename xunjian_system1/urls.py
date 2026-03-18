@@ -22,7 +22,7 @@ from django.urls import path, include
 from django.urls import path, re_path
 from django.conf.urls.static import serve
 from django.conf import settings
-from app02.views_01 import depart, admin, account, log_backup, device, config_backup, func, fbounc, host_xunjian,crc_query
+from app02.views_01 import depart, admin as admin_views, account, log_backup, device, config_backup, func, fbounc, host_xunjian,crc_query
 
 urlpatterns = [
     path('', account.login),
@@ -60,12 +60,12 @@ urlpatterns = [
     path('depart/multi/', depart.depart_multi),
 
     # 管理员的管理
-    path('admin/list/', admin.admin_list),
-    path('admin/add/', admin.admin_add),
-    path('admin/<int:nid>/edit/', admin.admin_edit),
+    path('admin/list/', admin_views.admin_list),
+    path('admin/add/', admin_views.admin_add),
+    path('admin/<int:nid>/edit/', admin_views.admin_edit),
     # path('admin/<int:nid>/password/', admin.admin_password),
     # path('admin/<int:nid>/delete/', admin.admin_delete),
-    path('admin/<int:nid>/reset/', admin.admin_reset),
+    path('admin/<int:nid>/reset/', admin_views.admin_reset),
 
     # 登录
     path('login/', account.login),
@@ -114,4 +114,6 @@ urlpatterns = [
     path('confirm/all/', views.confirm_all),
     path('data/crc/', crc_query.crc_query),
 
+    # 添加Django admin站点URL，使用命名空间避免冲突
+    path('django-admin/', admin.site.urls, name='django-admin'),
 ]

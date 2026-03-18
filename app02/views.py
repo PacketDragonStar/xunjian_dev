@@ -329,13 +329,13 @@ def find_latest_log_file(log_directory):
 def find_errors_in_file(file_path):
     # 读取文件并查找包含 "ERROR" 和’已完成xx设备巡检‘的行
     error_lines = []
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='gbk') as file:
         for line in file:
             if "ERROR" in line:
                 error_lines.append(line.strip())  # 将符合条件的行添加到列表中
             if '已完成' in line:
                 error_lines.append(line.strip())
-    return error_lines  # 返回包含所有 "ERROR" 行的列表
+    return error_lines[0:5]  # 返回包含所有 "ERROR" 行的列表
 
 def search_history(request):
     if request.method=="POST":
