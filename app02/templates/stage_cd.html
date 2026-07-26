@@ -1,0 +1,106 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--accent:#0F6E56;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;--ok:#1a7f37;--fail:#cf222e;--warn:#bc4c00;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1180px;margin:0 auto;padding:26px 16px;}
+.tb{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:22px;}
+.tb table{margin:0;width:100%;border-collapse:collapse;}
+.tb thead th{background:#f6f8fa;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#57606a;border-bottom:2px solid var(--border);padding:9px 12px;text-align:left;}
+.tb tbody td{padding:8px 12px;border-bottom:1px solid #eef1f4;font-size:.85rem;}
+.tb tbody tr:hover{background:#f6fbff;}
+.bk{padding:2px 9px;border-radius:20px;font-size:.74rem;font-weight:600;white-space:nowrap;}
+.bk-g{background:#dafbe1;color:#1a7f37;}.bk-r{background:#ffebe9;color:#cf222e;}.bk-o{background:#fff1e5;color:#bc4c00;}.bk-b{background:#ddf4ff;color:#0550ae;}
+.bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+h4{margin:0;font-weight:700;}
+.xa{border:1px solid var(--border);border-radius:4px;padding:4px 12px;font-size:.8rem;color:#57606a;text-decoration:none;background:#fff;margin-right:6px;}
+.xa:hover{background:#f6f8fa;}
+.bs{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 20px;font-size:.86rem;cursor:pointer;}
+.muted{color:#8c959f;font-size:.82rem;}
+.tag{display:inline-block;background:#eef1f4;border-radius:4px;padding:1px 7px;font-size:.74rem;margin:1px 2px;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <div class="bar">
+    <h4>阶段 C · 设备发现 &amp; 配置合规</h4>
+    <form method="post" action="/new/stagecd/run/" style="display:flex;gap:8px;align-items:center;">
+      {% csrf_token %}
+      <select name="site" class="form-control" style="width:120px;font-size:.85rem;">
+        <option value="">全部站点</option>
+        <option value="知识城" {% if site == "知识城" %}selected{% endif %}>知识城</option>
+        <option value="化龙" {% if site == "化龙" %}selected{% endif %}>化龙</option>
+      </select>
+      <button type="submit" name="kind" value="discovery" class="xa">运行设备发现</button>
+      <button type="submit" name="kind" value="compliance" class="xa">运行合规检查</button>
+      <button type="submit" name="kind" value="all" class="bs">全部运行</button>
+    </form>
+  </div>
+
+  {% if disc_time %}
+  <div class="muted" style="margin-bottom:6px;">设备发现批次：{{ disc_time }} ·
+    未知邻居 {{ unknowns|length }} 个 · 无 LLDP 采集 {{ no_lldp|length }} 台</div>
+  {% else %}
+  <div class="muted" style="margin-bottom:6px;">尚未运行设备发现，点击右上「运行设备发现」。</div>
+  {% endif %}
+
+  <div class="tb">
+    <table>
+      <thead><tr><th>未知 LLDP 邻居</th><th>发现自设备</th><th>本端端口</th><th>对端端口</th><th>状态</th></tr></thead>
+      <tbody>
+        {% for u in unknowns %}
+        <tr>
+          <td>{{ u.neighbor }}</td><td>{{ u.device }}</td><td>{{ u.local_port }}</td><td>{{ u.peer_port }}</td>
+          <td><span class="bk bk-r">未知资产</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="muted">无未知邻居 ✅</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tb">
+    <table>
+      <thead><tr><th>无 LLDP 采集的设备（疑似未开启 LLDP / 采集缺失）</th></tr></thead>
+      <tbody>
+        {% for d in no_lldp %}
+        <tr><td>{{ d.name }} <span class="tag">{{ d.site }}</span></td></tr>
+        {% empty %}
+        <tr><td class="muted">所有设备均有 LLDP 采集 ✅</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if comp_time %}
+  <div class="muted" style="margin:18px 0 6px;">配置合规批次：{{ comp_time }} ·
+    不合规项 {{ violations|length }} 项</div>
+  {% else %}
+  <div class="muted" style="margin:18px 0 6px;">尚未运行合规检查，点击右上「运行合规检查」。</div>
+  {% endif %}
+
+  <div class="tb">
+    <table>
+      <thead><tr><th>设备</th><th>策略</th><th>规则</th><th>严重级别</th><th>说明</th></tr></thead>
+      <tbody>
+        {% for v in violations %}
+        <tr>
+          <td>{{ v.device }}</td><td>{{ v.policy }}</td><td>{{ v.rule }}</td>
+          <td><span class="bk {% if v.severity == 'P0' %}bk-r{% elif v.severity == 'P1' %}bk-o{% else %}bk-b{% endif %}">{{ v.severity }}</span></td>
+          <td>{{ v.detail }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="muted">无合规违规项 ✅</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="muted">已配置合规策略：
+    {% for p in policies %}<span class="tag">{{ p.name }}</span>{% endfor %}
+    <br>提示：合规规则可在「检查项管理」同级的数据表中维护（ComplianceRule）；LLDP 解析为启发式，若实测发现为空请按真实回显校准 _parse_lldp。
+  </div>
+</div>
+{% endblock %}

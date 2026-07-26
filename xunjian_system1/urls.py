@@ -1,119 +1,109 @@
 """
-URL configuration for xunjian_system1 project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+URL configuration for xunjian_system1 project — 巡检引擎 v2 统一路由
 """
 from django.contrib import admin
 from django.urls import path
-from app02 import views
-from django.contrib import admin
-from django.urls import path, include
-from django.urls import path, re_path
-from django.conf.urls.static import serve
 from django.conf import settings
-from app02.views_01 import depart, admin as admin_views, account, log_backup, device, config_backup, func, fbounc, host_xunjian,crc_query
+from django.conf.urls.static import static
+from app02 import views
 
 urlpatterns = [
-    path('', account.login),
-    # path('device/add/', views.device_add),
-    path('history/delete/', views.history_delete),
-    # path('func/delete/', views.func_delete),
-    path('group/add/', views.group_add),
-    # path('func/add/', views.func_add),
-    path('bound/funcgroup/', views.bound_funcgroup),
-    path('boundfg/delete/', views.boundfg_delete),
-    path('info/list/', views.info_list),
-    path('info/xunjian/', views.info_xunjian),
-    path('info/xunjiantest/', views.info_xunjiantest, name='xunjiantest'),  # test
-    path('grappelli/', include('grappelli.urls')),  # Grappelli URLS
-    path('search/history/', views.search_history),
-    path('set/jixian/', views.set_jixian),
-    path('info/history/', views.info_history),
-    path('display/history/', views.display_history),
-    path('text/compare/', views.text_compare),
-    path('info/<int:nid>/edit/', views.info_edit),
-    path('confirm/notes/', views.confirm_notes),
-    path('peizhiguanli/device/', views.peizhiguanli_device),
-    path('peizhiguanli/con/', views.peizhiguanli_con),
-    path('peizhiguanli/result/', views.peizhiguanli_result),
-    path('test/add/', views.test_add),
-    path('boundfunc/edit/', views.boundfunc_edit),
+    # ── Django admin ──
+    path('django-admin/', admin.site.urls),
 
-    re_path('media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    # ── 首页 / 仪表盘 ──
+    path('',                    views.dashboard,              name='new_index'),
+    path('dashboard/',          views.dashboard,              name='dashboard'),
 
-    # 部门
-    path('depart/list/', depart.depart_list),
-    path('depart/add/', depart.depart_add),
-    path('depart/delete/', depart.depart_delete),
-    path('depart/edit/<int:nid>/', depart.depart_edit),
-    path('depart/multi/', depart.depart_multi),
+    # ── 巡检执行 ──
+    path('new/xunjian/',        views.new_xunjian_page,       name='new_xunjian_page'),
+    path('new/xunjian/run/',    views.new_run_xunjian,        name='new_run_xunjian'),
 
-    # 管理员的管理
-    path('admin/list/', admin_views.admin_list),
-    path('admin/add/', admin_views.admin_add),
-    path('admin/<int:nid>/edit/', admin_views.admin_edit),
-    # path('admin/<int:nid>/password/', admin.admin_password),
-    # path('admin/<int:nid>/delete/', admin.admin_delete),
-    path('admin/<int:nid>/reset/', admin_views.admin_reset),
+    # ── 任务中心 ──
+    path('task/center/',        views.task_center,            name='task_center'),
+    path('task/<int:task_id>/',           views.task_detail,       name='task_detail'),
+    path('task/<int:task_id>/detail/',    views.task_detail_json,  name='task_detail_json'),
+    path('task/<int:task_id>/resume/',    views.task_resume,       name='task_resume'),
 
-    # 登录
-    path('login/', account.login),
-    path('logout/', account.logout),
-    # path('image/code/', account.image_code),
+    # ── 历史记录 ──
+    path('new/history/',             views.new_search_history,         name='new_search_history'),
+    path('new/history/detail/',      views.new_history_detail,         name='new_history_detail'),
+    path('new/history/delete/',      views.new_history_delete,         name='new_history_delete'),
+    path('new/history/browse/',      views.xunjian_history_browse,     name='xunjian_history_browse'),
+    path('new/history/raw_output/',  views.xunjian_history_raw_output, name='xunjian_history_raw_output'),
+    path('new/baseline/set/',        views.new_set_baseline,           name='new_set_baseline'),
 
-    # 函数组管理
-    path('fbounc/list/', fbounc.fbounc_list),
-    path('fbounc/multi/', fbounc.fbounc_multi),
-    path('fbounc/add/', fbounc.fbounc_add),
-    path('fbounc/delete/', fbounc.fbounc_delete),
+    # ── 异常确认 ──
+    path('new/confirm/',        views.new_confirm_notes,      name='new_confirm_notes'),
+    path('new/confirm/all/',    views.new_confirm_all,        name='new_confirm_all'),
 
-    # 函数管理
-    path('func/list/', func.func_list),
-    path('func/multi/', func.func_multi),
-    path('func/add/', func.func_add),
-    path('func/delete/', func.func_delete),
+    # ── 文本对比 ──
+    path('new/compare/',        views.new_text_compare,       name='new_text_compare'),
 
-    # 设备管理
-    path('device/list/', device.device_list),
-    path('device/multi/', device.device_multi),
-    path('device/add/', device.device_add),
-    path('device/delete/', device.device_delete),
-    path('device/detail/', device.device_detail),
-    path('device/edit/', device.device_edit),
+    # ── 配置下载 ──
+    path('new/config/download/', views.config_download,        name='config_download'),
 
-    # 配置备份
-    path('configBackup/list/', config_backup.conf_backup_list, name='conf_backup_list'),
-    path('configBackup/add/', config_backup.conf_backup_add, name='conf_backup_add'),
-    path('configBackup/download/<int:uid>/', config_backup.conf_backup_download, name='conf_backup_download'),
-    path('configBackup/view/<int:uid>/', config_backup.conf_backup_view, name='conf_backup_view'),
-    path('configBackup/diff/<int:uid>/', config_backup.diff_view, name='diff_view'),
-    path('configBackup/select/', config_backup.select_device, name='select_device'),
-    path('configBackup/note/', config_backup.save_notes, name='save-notes'),
+    # ── 巡检项管理 ──
+    path('new/checkitem/list/',   views.new_checkitem_list,   name='new_checkitem_list'),
+    path('new/checkitem/add/',    views.new_checkitem_add,    name='new_checkitem_add'),
+    path('new/checkitem/edit/',   views.new_checkitem_edit,   name='new_checkitem_edit'),
+    path('new/checkitem/delete/', views.new_checkitem_delete, name='new_checkitem_delete'),
+    path('new/checkitem/detail/', views.new_checkitem_detail, name='new_checkitem_detail'),
 
-    # 新版-联动巡检-配置备份
-    path('logBackup/list/', log_backup.log_backup_list, name='log_backup_list'),
-    path('logBackup/note/', log_backup.save_notes, name='log_backup_notes'),
-    path('logBackup/download/<int:uid>/', log_backup.log_backup_download, name='log_backup_download'),
-    path('logBackup/download_backups/', log_backup.download_backups, name='download_backups'),
-    path('change/password/', device.change_password),
+    # ── 设备分组管理 ──
+    path('new/group/list/',     views.new_group_list,         name='new_group_list'),
+    path('new/group/add/',      views.new_group_add,          name='new_group_add'),
+    path('new/group/edit/',     views.new_group_edit,         name='new_group_edit'),
+    path('new/group/delete/',   views.new_group_delete,       name='new_group_delete'),
 
-    # 主机巡检
-    path('host/list/', host_xunjian.host_list),
-    path('host/detail/', host_xunjian.host_detail),
-    path('confirm/all/', views.confirm_all),
-    path('data/crc/', crc_query.crc_query),
+    # ── 新设备管理 ──
+    path('new/device/list/',    views.new_device_list,        name='new_device_list'),
+    path('new/device/add/',     views.new_device_add,         name='new_device_add'),
+    path('new/device/edit/',    views.new_device_edit,        name='new_device_edit'),
+    path('new/device/delete/',  views.new_device_delete,      name='new_device_delete'),
+    path('new/device/detail/',  views.new_device_detail,      name='new_device_detail'),
+    path('new/device/capability/', views.new_device_capability, name='new_device_capability'),
 
-    # 添加Django admin站点URL，使用命名空间避免冲突
-    path('django-admin/', admin.site.urls, name='django-admin'),
+    # ── 检查集管理 ──
+    path('new/checkset/list/',  views.new_checkset_list,      name='new_checkset_list'),
+    path('new/checkset/add/',   views.new_checkset_add,       name='new_checkset_add'),
+    path('new/checkset/edit/',  views.new_checkset_edit,      name='new_checkset_edit'),
+    path('new/checkset/delete/',views.new_checkset_delete,    name='new_checkset_delete'),
+    path('new/checkset/detail/',views.new_checkset_detail,    name='new_checkset_detail'),
+
+    # ── Checker 微调工具 ──
+    path('new/tools/test_checker/',     views.test_checker_page, name='test_checker_page'),
+    path('new/tools/test_checker/run/', views.test_checker_run,  name='test_checker_run'),
+    path('new/tools/checker_script/source/',   views.checker_script_source,   name='checker_script_source'),
+    path('new/tools/checker_script/save/',     views.checker_script_save,     name='checker_script_save'),
+    path('new/tools/checker_script/rollback/', views.checker_script_rollback, name='checker_script_rollback'),
+
+    # ── AI辅助批量导入 ──
+    path('new/import/',         views.new_import_page,        name='new_import_page'),
+    path('new/import/parse/',   views.new_ai_parse,           name='new_ai_parse'),
+    path('new/import/batch/',   views.new_ai_batch_import,    name='new_ai_batch_import'),
+
+    # ── 验收报告 ──
+    path('new/report/acceptance/', views.acceptance_report,   name='acceptance_report'),
+
+    # ── 整体巡检报告（项目设备整体态势）──
+    path('new/report/overview/',        views.fleet_report,        name='fleet_report'),
+    path('new/report/overview/export/', views.fleet_report_export, name='fleet_report_export'),
+
+    # ── CMDB 台账查询 ──
+    path('cmdb/device/',    views.cmdb_device_list,    name='cmdb_device_list'),
+    path('cmdb/interface/', views.cmdb_interface_list, name='cmdb_interface_list'),
+    path('cmdb/link/',      views.cmdb_link_list,      name='cmdb_link_list'),
+    path('cmdb/ip/',        views.cmdb_ip_list,        name='cmdb_ip_list'),
+    path('new/report/acceptance/export/', views.acceptance_report_export, name='acceptance_report_export'),
+
+    # ── 阶段 C：设备发现 + 配置合规 ──
+    path('new/stagecd/',        views.stage_cd_page,  name='stage_cd_page'),
+    path('new/stagecd/run/',    views.stage_cd_run,   name='stage_cd_run'),
+
+    # ── 阶段 D：趋势图 ──
+    path('new/trend/',          views.trend_page,    name='trend_page'),
+
+    # ── 静态文件服务 ──
+    *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
 ]

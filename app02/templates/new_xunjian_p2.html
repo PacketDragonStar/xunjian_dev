@@ -1,0 +1,98 @@
+{% block js %}
+<script>
+var _t = '';
+function aL(m, c) {
+  var b = document.getElementById('lb');
+  b.style.display = 'block';
+  var d = document.createElement('div');
+  if (c) d.style.color = c;
+  d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + m;
+  b.appendChild(d);
+  b.scrollTop = b.scrollHeight;
+}
+function sP(p, l) {
+  document.getElementById('pw').style.display = 'block';
+  document.getElementById('pbi').style.width = p + '%';
+  if (l) document.getElementById('pl').textContent = l;
+}
+function sb(s) {
+  if (s === 'ok') return '<span class="bk-ok">正常</span>';
+  if (s === 'anomaly') return '<span class="bk-wn">异常</span>';
+  return '<span class="bk-fl">失败</span>';
+}
+function gck(n) {
+  var v = document.cookie.match('(^|;) ?' + n + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+function doRun() {
+  var btn = document.getElementById('btn-run');
+  var cs  = document.getElementById('sel-cs').value;
+  btn.disabled = true;
+  btn.textContent = '巡检中...';
+  document.getElementById('gd').style.display = 'none';
+  document.getElementById('sr').style.display = 'none';
+  document.getElementById('rs').style.display = 'none';
+  document.getElementById('lb').innerHTML = '';
+  sP(5, '正在连接设备...');
+  aL('巡检任务已提交，等待设备响应...');
+  var st = Date.now();
+  var tk = setInterval(function() {
+    document.getElementById('pt').textContent = '已用时 ' + ((Date.now()-st)/1000).toFixed(0) + 's';
+  }, 1000);
+  var fp = 5;
+  var ft = setInterval(function() {
+    if (fp < 82) { fp += Math.random()*3+1; sP(Math.min(fp, 82)); }
+  }, 1400);
+  var fd = new FormData();
+  if (cs) fd.append('checkset_id', cs);
+  fetch('/new/xunjian/run/', {
+    method: 'POST', body: fd,
+    headers: {'X-CSRFToken': gck('csrftoken')}
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(res) {
+    clearInterval(ft); clearInterval(tk);
+    sP(100, '巡检完成');
+    btn.disabled = false;
+    btn.textContent = '&#9654; 开始巡检';
+    if (!res.status) { aL('执行失败：' + res.error, '#f85149'); return; }
+    var d = res.data;
+    _t = d.time;
+    document.getElementById('st').textContent  = d.total_devices;
+    document.getElementById('sok').textContent = d.ok_devices;
+    document.getElementById('swn').textContent = d.anomaly_devices;
+    document.getElementById('sfl').textContent = d.failed_devices;
+    document.getElementById('sc').textContent  = d.total_checks;
+    document.getElementById('sr').style.display = 'flex';
+    aL('巡检完成：共 '+d.total_devices+' 台，正常 '+d.ok_devices+' 台，异常 '+d.anomaly_devices+' 台，失败 '+d.failed_devices+' 台', '#3fb950');
+    var tb = document.getElementById('rt');
+    tb.innerHTML = '';
+    d.devices.forEach(function(dv) {
+      var op = dv.status !== 'failed'
+        ? '<a href="/new/history/detail/?time=' + _t + '" class="btn btn-xs btn-warning">查看异常</a>'
+        : '';
+      tb.innerHTML += '<tr>'
+        + '<td><strong>' + dv.name + '</strong></td>'
+        + '<td><code>' + dv.ip + '</code></td>'
+        + '<td>' + sb(dv.status) + '</td>'
+        + '<td>' + dv.ok_count + '/' + dv.total + '</td>'
+        + '<td>' + (dv.anomaly_count || '-') + '</td>'
+        + '<td>' + op + '</td>'
+        + '</tr>';
+    });
+    document.getElementById('rs').style.display = 'block';
+    if (d.anomaly_devices > 0) {
+      var lk = document.getElementById('bd');
+      lk.href = '/new/history/detail/?time=' + _t;
+      lk.style.display = 'inline-block';
+    }
+  })
+  .catch(function(e) {
+    clearInterval(ft); clearInterval(tk);
+    aL('网络错误：' + e, '#f85149');
+    btn.disabled = false;
+    btn.textContent = '&#9654; 开始巡检';
+  });
+}
+</script>
+{% endblock %}

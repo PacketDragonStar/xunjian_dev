@@ -1,0 +1,139 @@
+{% block js %}
+<script>
+var _items = [];
+var _cur = null;
+var PL = {raw:'原始文本',regex:'正则提取',strip_ts:'去时间戳',textfsm:'TextFSM'};
+var CL = {baseline:'基线对比',threshold:'阈值判断',count:'关键字计数',contains:'包含检查',custom:'自定义函数'};
+var BC = {raw:'bk-gray',regex:'bk-b',strip_ts:'bk-o',textfsm:'bk-p',baseline:'bk-g',threshold:'bk-o',count:'bk-b',contains:'bk-p',custom:'bk-gray'};
+
+function mkBk(v, labels, cls) {
+  return '<span class="bk ' + (cls[v]||'bk-gray') + '">' + (labels[v]||v) + '</span>';
+}
+
+function gck(n) {
+  var v = document.cookie.match('(^|;) ?' + n + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+
+function doAnalyze() {
+  var name = document.getElementById('i-name').value.trim();
+  var cmd  = document.getElementById('i-cmd').value.trim();
+  var out  = document.getElementById('i-output').value.trim();
+  if (!cmd || !out) { alert('请填写命令和输出内容'); return; }
+  var fd = new FormData();
+  fd.append('name', name);
+  fd.append('command', cmd);
+  fd.append('output', out);
+  fetch('/new/import/parse/', {
+    method: 'POST', body: fd,
+    headers: {'X-CSRFToken': gck('csrftoken')}
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res) {
+    if (!res.status) { alert('分析失败：' + res.error); return; }
+    var d = res.data;
+    _cur = {
+      name:           name,
+      command:        cmd,
+      parser:         d.parser,
+      parser_config:  d.parser_config,
+      checker:        d.checker,
+      checker_config: d.checker_config,
+      error_note:     '请检查',
+      group_id:       ''
+    };
+    document.getElementById('r-parser').innerHTML  = mkBk(d.parser, PL, BC);
+    document.getElementById('r-pcfg').textContent  = d.parser_config ? JSON.stringify(d.parser_config) : '无需配置';
+    document.getElementById('r-checker').innerHTML = mkBk(d.checker, CL, BC);
+    document.getElementById('r-ccfg').textContent  = d.checker_config ? JSON.stringify(d.checker_config) : '无需配置';
+    document.getElementById('r-reason').textContent = '&#128161; ' + d.reason;
+    document.getElementById('r-note').value = '请检查';
+    document.getElementById('r-group').value = '';
+    document.getElementById('result-card').style.display = 'block';
+  })
+  .catch(function(e){ alert('请求失败：' + e); });
+}
+
+function addToList() {
+  if (!_cur) { alert('请先进行AI分析'); return; }
+  _cur.error_note = document.getElementById('r-note').value || '请检查';
+  _cur.group_id   = document.getElementById('r-group').value;
+  _items.push(Object.assign({}, _cur));
+  renderList();
+  document.getElementById('result-card').style.display = 'none';
+  document.getElementById('i-name').value = '';
+  document.getElementById('i-cmd').value  = '';
+  document.getElementById('i-output').value = '';
+  _cur = null;
+}
+
+function renderList() {
+  var box = document.getElementById('import-list');
+  document.getElementById('list-cnt').textContent = _items.length + ' 项';
+  document.getElementById('btn-import').disabled = _items.length === 0;
+  if (_items.length === 0) {
+    box.innerHTML = '<div style="text-align:center;color:#8c959f;padding:32px;font-size:.88rem;">暂无内容</div>';
+    return;
+  }
+  var html = '';
+  _items.forEach(function(it, idx) {
+    html += '<div class="item-card">';
+    html += '<div class="info">';
+    html += '<strong>' + (it.name||'未命名') + '</strong>';
+    html += '<code style="font-size:.78rem;color:#57606a;">' + it.command + '</code><br>';
+    html += mkBk(it.parser, PL, BC) + ' &nbsp; ' + mkBk(it.checker, CL, BC);
+    if (it.group_id) html += ' <span style="font-size:.75rem;color:#57606a;">绑定分组ID:' + it.group_id + '</span>';
+    html += '</div>';
+    html += '<button class="del" onclick="delItem(' + idx + ')" title="移除">&times;</button>';
+    html += '</div>';
+  });
+  box.innerHTML = html;
+}
+
+function delItem(idx) {
+  _items.splice(idx, 1);
+  renderList();
+}
+
+function clearList() {
+  _items = [];
+  renderList();
+}
+
+function clearForm() {
+  ['i-name','i-cmd','i-output'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('result-card').style.display = 'none';
+  _cur = null;
+}
+
+function doImport() {
+  if (_items.length === 0) return;
+  document.getElementById('btn-import').disabled = true;
+  fetch('/new/import/batch/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': gck('csrftoken')
+    },
+    body: JSON.stringify({items: _items})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res) {
+    var msg = '<p style="color:#1a7f37;font-weight:600;">成功导入 ' + res.created + ' 个巡检项</p>';
+    if (res.errors && res.errors.length) {
+      msg += '<p style="color:#cf222e;">错误信息：</p><ul>';
+      res.errors.forEach(function(e){ msg += '<li style="font-size:.82rem;">' + e + '</li>'; });
+      msg += '</ul>';
+    }
+    document.getElementById('import-msg').innerHTML = msg;
+    document.getElementById('import-result').style.display = 'block';
+    _items = [];
+    renderList();
+  })
+  .catch(function(e){
+    alert('导入失败：' + e);
+    document.getElementById('btn-import').disabled = false;
+  });
+}
+</script>
+{% endblock %}

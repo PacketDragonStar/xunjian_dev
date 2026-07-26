@@ -1,0 +1,114 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+.xj-task-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px;}
+.xj-task-prog{height:14px;background:var(--xj-border-2);border-radius:8px;overflow:hidden;margin:18px 0 6px;}
+.xj-task-prog>i{display:block;height:100%;background:var(--xj-accent);border-radius:8px;transition:width .4s;}
+.xj-stat{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;}
+.xj-stat .s{flex:1;min-width:120px;background:var(--xj-content);border:1px solid var(--xj-border);border-radius:10px;padding:14px 16px;}
+.xj-stat .s .n{font-size:1.6rem;font-weight:700;}
+.xj-stat .s .l{font-size:.78rem;color:var(--xj-text-2);margin-top:2px;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="xj-card">
+  <div class="xj-task-head">
+    <div>
+      <h3 style="margin:0;">巡检任务 #{{ task_id }}</h3>
+      <div style="color:var(--xj-text-2);font-size:.82rem;margin-top:4px;">
+        操作人：{{ operator }} ｜ 提交：{{ created_at }} ｜
+        状态：<span class="xj-badge {% if status == 'done' %}ok{% elif status == 'partial' %}warn{% elif status == 'failed' %}fail{% else %}run{% endif %}">{{ status_cn }}</span>
+      </div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:10px;">
+      <a class="btn btn-default" href="/task/center/">← 任务中心</a>
+      <a id="link-history" class="btn btn-primary" href="#" style="display:none;">查看异常详情</a>
+      <button id="btn-resume" class="btn btn-warning" style="display:none;" onclick="doResume()">续跑失败设备</button>
+    </div>
+  </div>
+
+  <div style="font-size:.82rem;color:var(--xj-text-2);">实时进度</div>
+  <div class="xj-task-prog"><i id="prog" style="width:0%"></i></div>
+  <div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--xj-text-2);">
+    <span id="prog-label">等待开始...</span>
+    <span id="prog-pct">0%</span>
+  </div>
+
+  <div class="xj-stat">
+    <div class="s"><div class="n" id="st-done">0</div><div class="l">已处理 / 共 <span id="st-total">0</span> 台</div></div>
+    <div class="s"><div class="n" style="color:var(--xj-ok);" id="st-ok">0</div><div class="l">正常</div></div>
+    <div class="s"><div class="n" style="color:var(--xj-warn);" id="st-anomaly">0</div><div class="l">异常</div></div>
+    <div class="s"><div class="n" style="color:var(--xj-fail);" id="st-failed">0</div><div class="l">失败</div></div>
+  </div>
+
+  <div id="err-box" class="xj-card" style="display:none;margin-top:14px;border-color:var(--xj-fail);background:var(--xj-fail-bg);color:var(--xj-fail);"></div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+var TASK_ID = {{ task_id }};
+function gck(n){var v=document.cookie.match('(^|;) ?'+n+'=([^;]*)(;|$)');return v?v[2]:null;}
+
+function tick(){
+  fetch('/task/' + TASK_ID + '/detail/')
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (!res.status) return;
+      var t = res.task;
+      var pct = t.pct || 0;
+      document.getElementById('prog').style.width = pct + '%';
+      document.getElementById('prog-pct').textContent = pct + '%';
+      document.getElementById('prog-label').textContent = '已处理 ' + t.done + ' / ' + t.device_count + ' 台';
+      document.getElementById('st-done').textContent = t.done;
+      document.getElementById('st-total').textContent = t.device_count;
+      document.getElementById('st-ok').textContent = t.ok_devices;
+      document.getElementById('st-anomaly').textContent = t.anomaly_devices;
+      document.getElementById('st-failed').textContent = t.failed_devices;
+      if (t.status === 'done' || t.status === 'partial' || t.status === 'failed') {
+        if (_iv) clearInterval(_iv);
+        onDone(t);
+      }
+    })
+    .catch(function(e){ console.error(e); });
+}
+
+function onDone(t){
+  if (t.status === 'failed') {
+    document.getElementById('prog-label').textContent = '任务执行失败';
+    var eb = document.getElementById('err-box');
+    eb.style.display = 'block';
+    eb.textContent = '错误信息：' + (t.error || '未知');
+    return;
+  }
+  document.getElementById('prog-label').textContent = '巡检完成（' + (t.status === 'partial' ? '部分设备失败' : '全部完成') + '）';
+  if (t.xunjian_time) {
+    var lh = document.getElementById('link-history');
+    lh.href = '/new/history/detail/?time=' + encodeURIComponent(t.xunjian_time);
+    lh.style.display = 'inline-block';
+  }
+  if (t.has_failed) {
+    document.getElementById('btn-resume').style.display = 'inline-block';
+  }
+}
+
+function doResume(){
+  var btn = document.getElementById('btn-resume');
+  btn.disabled = true; btn.textContent = '续跑中...';
+  var fd = new FormData();
+  fetch('/task/' + TASK_ID + '/resume/', {
+    method: 'POST', body: fd,
+    headers: {'X-CSRFToken': gck('csrftoken')}
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (!res.status) { alert('续跑失败：' + res.error); btn.disabled = false; btn.textContent = '续跑失败设备'; return; }
+      window.location.href = '/task/' + res.task_id + '/';
+    })
+    .catch(function(e){ alert('网络错误：' + e); btn.disabled = false; btn.textContent = '续跑失败设备'; });
+}
+
+var _iv = setInterval(tick, 1500);
+tick();
+</script>
+{% endblock %}

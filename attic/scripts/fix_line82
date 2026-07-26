@@ -1,0 +1,24 @@
+"""重写 gen_hualong_excel.py 的 CORE_EXTRA 部分，修复 IRF 行语法"""
+with open('gen_hualong_excel.py', 'r', encoding='utf-8') as f:
+    content = f.read()
+
+# 直接修复第 82 行异常——更鲁棒的方式：用正则把整行替换
+old_line = "(28, 'IRF堆叠状态', 'display irf', '核心/堆叠', 'B', 'raw', 'custom', ''), '{\"func\":\"check_irf\"}', 'IRF mode=normal,Master=1', ''),\n"
+new_line = "(28, 'IRF堆叠状态', 'display irf', '核心/堆叠', 'B', 'raw', 'custom', '', '{\"func\":\"check_irf\"}', 'IRF mode=normal,Master=1', ''),\n"
+
+if old_line in content:
+    content = content.replace(old_line, new_line)
+    print('FIXED: IRF line')
+else:
+    # Fallback: just try to add the IRF line after link-aggregation
+    marker = "(27, '链路聚合'"
+    idx = content.find(marker)
+    end = content.find("'\n]", idx)
+    if idx != -1:
+        content = content[:end] + "\n    (28, 'IRF堆叠状态', 'display irf', '核心/堆叠', 'B', 'raw', 'custom', '', '{\"func\":\"check_irf\"}', 'IRF mode=normal,Master=1', ''),\n" + content[end:]
+
+with open('gen_hualong_excel.py', 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print('Running gen_hualong_excel.py...')
+exec(open('gen_hualong_excel.py', encoding='utf-8').read())

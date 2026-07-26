@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -19,12 +20,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#&m5d#^z)f^!)=$7!ezpw13984tjz78l4t^d&xpti634wpc#e)'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'change-me-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 
 # Application definition
@@ -78,11 +79,11 @@ WSGI_APPLICATION = 'xunjian_system1.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'xunjian_system',  # 数据库名字
-        'USER': 'root',
-        'PASSWORD': 'root123',
-        'HOST': '127.0.0.1',  # 那台机器安装了MySQL
-        'PORT': 3306,
+        'NAME': os.environ.get('DB_NAME', 'xunjian_system'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', '7ujm^YHN'),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': int(os.environ.get('DB_PORT', '3306')),
     }
 }
 
@@ -109,9 +110,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'zh-hans'
 
-TIME_ZONE = 'Etc/GMT-8'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
@@ -128,8 +129,55 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-GRAPPELLI_ADMIN_TITLE = 'xunjian_system1'
+# ═══════════════════════════════════════════════════════
+#  日志配置（覆盖 xunjian.* 命名空间）
+# ═══════════════════════════════════════════════════════
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '{asctime} {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'xunjian': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# ═══════════════════════════════════════════════════════
+#  巡检并发参数
+# ═══════════════════════════════════════════════════════
+XUNJIAN_CONCURRENCY = 32
+
+# CheckResult / DiscoveryRecord / ComplianceResult 保留窗口（天），超期由后台维护线程自动清理
+CHECKRESULT_RETENTION_DAYS = 90
 
 MEDIA_ROOT = BASE_DIR / 'media'
 
 MEDIA_URL = '/media/'
+
+# ═══════════════════════════════════════════════════════
+#  CMDB / 拓扑图谱（network-seek + Neo4j）联动配置
+#  仅在使用 `manage.py rebuild_topology --push` 刷新 Neo4j 图时需要。
+#  不配或置空则 rebuild_topology 只刷新本地 CMDB 与 fixture。
+# ═══════════════════════════════════════════════════════
+# network-seek 项目根目录（含 scripts/ 与 network_seek/ 包）
+NETWORK_SEEK_DIR = r'C:/Users/ZSS/Desktop/network-seek'
+# 用于运行 network-seek 脚本的 Python（建议其独立 venv 的解释器）
+NETWORK_SEEK_PYTHON = r'C:/Users/ZSS/Desktop/network-seek/venv/Scripts/python.exe'
+# Neo4j 连接（每站点一个容器不同 bolt 端口：知识城7687/化龙7688）
+NEO4J_BOLT_URI = 'bolt://localhost:7687'
+NEO4J_USER = 'neo4j'
+NEO4J_PASSWORD = 'networkseek2024'

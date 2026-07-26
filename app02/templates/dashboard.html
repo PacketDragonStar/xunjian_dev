@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block content %}
+<div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:4px;">今日巡检概览</div>
+    <div style="color:var(--xj-text-2);margin-bottom:18px;">最近一次巡检：{{ latest_time|default:"暂无记录" }}</div>
+
+    <div class="xj-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="xj-card">
+            <div class="xj-kpi">
+                <div class="xj-kpi-ico" style="background:var(--xj-accent-soft);color:var(--xj-accent);">设</div>
+                <div>
+                    <div class="xj-kpi-label">设备总数</div>
+                    <div class="xj-kpi-num">{{ total_devices }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="xj-card">
+            <div class="xj-kpi">
+                <div class="xj-kpi-ico" style="background:var(--xj-warn-bg);color:var(--xj-warn);">异</div>
+                <div>
+                    <div class="xj-kpi-label">待确认异常</div>
+                    <div class="xj-kpi-num">{{ pending_anomaly }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="xj-card">
+            <div class="xj-kpi">
+                <div class="xj-kpi-ico" style="background:var(--xj-run-bg);color:var(--xj-run);">集</div>
+                <div>
+                    <div class="xj-kpi-label">检查集 / 巡检项</div>
+                    <div class="xj-kpi-num">{{ total_checksets }} / {{ total_checkitems }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="xj-card">
+            <div class="xj-kpi">
+                <div class="xj-kpi-ico" style="background:var(--xj-fail-bg);color:var(--xj-fail);">失</div>
+                <div>
+                    <div class="xj-kpi-label">最近巡检失败设备</div>
+                    <div class="xj-kpi-num">{{ failed }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="xj-row" style="grid-template-columns:320px 1fr;">
+        <div class="xj-card">
+            <h3>设备健康度</h3>
+            <div style="display:flex;align-items:center;gap:16px;">
+                <svg width="110" height="110" viewBox="0 0 110 110">
+                    <circle cx="55" cy="55" r="46" fill="none" stroke="#eef1f5" stroke-width="12"/>
+                    <circle cx="55" cy="55" r="46" fill="none" stroke="var(--xj-accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="{{ dash_ok }} 289" transform="rotate(-90 55 55)"/>
+                    <text x="55" y="52" text-anchor="middle" font-size="22" font-weight="600" fill="#1f2937">{{ healthy_pct }}%</text>
+                    <text x="55" y="68" text-anchor="middle" font-size="11" fill="#6b7280">良好</text>
+                </svg>
+                <div style="font-size:12px;color:var(--xj-text-2);line-height:1.9;">
+                    <div><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--xj-accent);margin-right:6px;"></span>正常 {{ ok }}</div>
+                    <div><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--xj-warn);margin-right:6px;"></span>异常 {{ anomaly }}</div>
+                    <div><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--xj-fail);margin-right:6px;"></span>失败 {{ failed }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="xj-card">
+            <h3>最近巡检状态分布</h3>
+            <div style="font-size:12px;color:var(--xj-text-2);margin-bottom:5px;">正常</div>
+            <div class="xj-progress" style="margin-bottom:12px;"><i style="width:{{ pct_ok }}%;background:var(--xj-accent);"></i></div>
+            <div style="font-size:12px;color:var(--xj-text-2);margin-bottom:5px;">异常</div>
+            <div class="xj-progress" style="margin-bottom:12px;"><i style="width:{{ pct_anomaly }}%;background:var(--xj-warn);"></i></div>
+            <div style="font-size:12px;color:var(--xj-text-2);margin-bottom:5px;">失败</div>
+            <div class="xj-progress"><i style="width:{{ pct_failed }}%;background:var(--xj-fail);"></i></div>
+        </div>
+    </div>
+
+    <div class="xj-card" style="margin-top:14px;">
+        <h3>最近巡检任务</h3>
+        <table class="xj-table">
+            <thead><tr><th>巡检时间</th><th>操作人</th><th>设备数</th><th>进度</th><th>结果</th><th>操作</th></tr></thead>
+            <tbody>
+            {% for r in recent %}
+                <tr>
+                    <td>{{ r.time }}</td>
+                    <td>{{ r.operator }}</td>
+                    <td>{{ r.device_count }}</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div class="xj-progress" style="flex:1;"><i style="width:{{ r.pct }}%;"></i></div>
+                            <span style="font-size:12px;color:var(--xj-text-2);">{{ r.ok }}/{{ r.device_count }}</span>
+                        </div>
+                    </td>
+                    <td><span class="xj-badge {{ r.badge }}">{{ r.result }}</span></td>
+                    <td><a class="xj-link" href="/new/history/">查看</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6" style="text-align:center;color:var(--xj-text-3);padding:28px;">暂无巡检记录</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

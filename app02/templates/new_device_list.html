@@ -1,0 +1,209 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--accent:#0969da;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;--fail:#cf222e;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1100px;margin:0 auto;padding:26px 16px;}
+.tb{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.tb table{margin:0;}
+.tb thead th{background:#f6f8fa;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#57606a;border-bottom:2px solid var(--border);}
+.tb tbody tr:hover{background:#f6fbff;}
+.xa{border:1px solid var(--border);border-radius:4px;padding:2px 10px;font-size:.75rem;color:#57606a;text-decoration:none;background:transparent;margin-right:3px;}
+.xa:hover{background:#f6f8fa;}
+.xr{border:1px solid #ffcdd2;border-radius:4px;padding:2px 10px;font-size:.75rem;color:#cf222e;text-decoration:none;background:transparent;}
+.xr:hover{background:#fff0f0;}
+.bk-g{background:#dafbe1;color:#1a7f37;padding:2px 8px;border-radius:20px;font-size:.74rem;font-weight:600;}
+.bk-gray{background:#f3f4f6;color:#57606a;padding:2px 8px;border-radius:20px;font-size:.74rem;font-weight:600;}
+.cap-b{display:inline-block;background:#eef2ff;color:#3b5bdb;padding:1px 7px;border-radius:20px;font-size:.7rem;font-weight:600;margin:1px 2px 1px 0;}
+.cap-muted{color:#8c959f;font-size:.74rem;}
+.cap-xa{font-size:.7rem;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:transparent;color:#57606a;cursor:pointer;margin-right:3px;}
+.cap-xa:hover{background:#f6f8fa;}
+.cap-xa.on{background:#dafbe1;border-color:#aceebb;color:#1a7f37;font-weight:600;}
+.cap-xa.busy{opacity:.6;cursor:wait;}
+.modal-bd{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;}
+.modal-bd.show{display:flex;}
+.mb{background:var(--card);border-radius:10px;padding:24px 28px;width:580px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+.mb h5{margin:0 0 16px;font-weight:700;}
+.fr{margin-bottom:12px;}
+.fr label{display:block;font-size:.78rem;font-weight:600;color:#57606a;margin-bottom:3px;}
+.fr input,.fr select,.fr textarea{width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:.86rem;box-sizing:border-box;}
+.fr textarea{font-family:Consolas,monospace;font-size:.78rem;min-height:60px;resize:vertical;}
+.fr .ht{font-size:.72rem;color:#8c959f;margin-top:2px;}
+.mbt{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+.bs{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 22px;font-size:.88rem;cursor:pointer;}
+.bc{background:transparent;border:1px solid var(--border);border-radius:6px;padding:7px 18px;font-size:.88rem;cursor:pointer;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h4 style="margin:0;font-weight:700;">设备管理（新版）</h4>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <form method="get" style="display:flex;gap:8px;">
+        <input name="q" value="{{ search_data }}" placeholder="搜索设备名或IP..." class="form-control" style="width:190px;font-size:.86rem;">
+        <button type="submit" class="btn btn-default btn-sm">搜索</button>
+      </form>
+      <button class="btn btn-primary btn-sm" onclick="openAdd()">+ 新增设备</button>
+      <a href="/new/import/" class="btn btn-default btn-sm">&#8659; AI批量导入</a>
+    </div>
+  </div>
+  <div class="tb">
+    <table class="table table-hover">
+      <thead><tr><th>设备名</th><th>IP</th><th>分组</th><th>设备分类</th><th>设备类型</th><th>扩展参数</th><th>状态</th><th>协议巡检</th><th>操作</th></tr></thead>
+      <tbody>
+      {% for dev in queryset %}
+      <tr>
+        <td><strong style="font-size:.87rem;">{{ dev.name }}</strong></td>
+        <td><code style="font-size:.8rem;">{{ dev.ip }}</code></td>
+        <td style="font-size:.84rem;">{{ dev.group.name|default:"-" }}</td>
+        <td style="font-size:.82rem;"><span class="bk-gray">{{ dev.dc_label }}</span></td>
+        <td><code style="font-size:.78rem;color:#57606a;">{{ dev.device_type }}</code></td>
+        <td style="font-size:.78rem;color:#57606a;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ dev.extra }}">{{ dev.extra }}</td>
+        <td>{% if dev.enabled %}<span class="bk-g">启用</span>{% else %}<span class="bk-gray">禁用</span>{% endif %}</td>
+        <td>
+          <div id="caps-{{ dev.id }}">
+            {% if dev.caps_none %}
+              <span class="cap-muted">未检测</span>
+            {% elif dev.caps_list %}
+              {% for c in dev.caps_list %}<span class="cap-b">{{ c }}</span>{% endfor %}
+            {% else %}
+              <span class="cap-muted">无特性</span>
+            {% endif %}
+          </div>
+          <div style="margin-top:5px;">
+            <button class="cap-xa" id="btn-disc-{{ dev.id }}" onclick="discoverCap({{ dev.id }})">检测能力</button>
+            <button class="cap-xa {% if dev.protocol %}on{% endif %}" id="btn-prot-{{ dev.id }}" onclick="toggleProtocol({{ dev.id }})">{% if dev.protocol %}协议开{% else %}协议关{% endif %}</button>
+          </div>
+        </td>
+        <td>
+          <a href="#" class="xa" onclick="openEdit({{ dev.id }})">编辑</a>
+          <a href="/new/device/delete/?uid={{ dev.id }}" class="xr" onclick="return confirm('确认删除？')">删除</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9" style="text-align:center;color:#8c959f;padding:32px;">暂无设备{% if search_data %}（搜索：{{ search_data }}）{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:14px;"><ul class="pagination" style="float:right;">{{ page_string|safe }}</ul></div>
+</div>
+
+<div class="modal-bd" id="modal">
+  <div class="mb">
+    <h5 id="mt">新增设备</h5>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="fr"><label>设备名 *</label><input id="f-name" placeholder="SW-CORE-01"></div>
+      <div class="fr"><label>IP地址 *</label><input id="f-ip" placeholder="192.168.1.1"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="fr"><label>设备类型 *</label>
+        <select id="f-dtype">
+          <option value="hp_comware">hp_comware（H3C 交换机/防火墙）</option>
+          <option value="huawei">huawei（华为 VRP）</option>
+          <option value="huawei_vrpv8">huawei_vrpv8（华为 NE 系列）</option>
+          <option value="hillstone">hillstone（山石防火墙）</option>
+          <option value="fortinet">fortinet（飞塔 FortiOS）</option>
+          <option value="cisco_ios">cisco_ios</option>
+          <option value="cisco_nxos">cisco_nxos</option>
+          <option value="juniper">juniper</option>
+          <option value="aruba">aruba</option>
+        </select>
+      </div>
+      <div class="fr"><label>所属分组</label>
+        <select id="f-group">
+          <option value="">-- 不指定 --</option>
+          {% for g in groups %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="fr"><label>用户名 *</label><input id="f-user" placeholder="admin"></div>
+      <div class="fr"><label>密码 *</label><input id="f-pwd" type="password" placeholder="••••••"></div>
+    </div>
+    <div class="fr">
+      <label>扩展参数 <span style="font-weight:400;color:#8c959f;">(JSON，用于动态阈值)</span></label>
+      <textarea id="f-extra" placeholder='{"ospf_nei": 9, "lldp_nei": 6}'></textarea>
+      <div class="ht">key为巡检项checker_config中expand_field对应的字段名，value为该设备的预期值</div>
+    </div>
+    <div class="fr"><label>状态</label>
+      <select id="f-enabled"><option value="true">启用</option><option value="false">禁用</option></select>
+    </div>
+    <div class="mbt">
+      <button class="bc" onclick="closeM()">取消</button>
+      <button class="bs" onclick="doSave()">保存</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+var _eid=null;
+function openAdd(){_eid=null;document.getElementById('mt').textContent='新增设备';clrF();document.getElementById('modal').classList.add('show');}
+function openEdit(id){
+  _eid=id;
+  fetch('/new/device/detail/?uid='+id).then(r=>r.json()).then(function(res){
+    if(!res.status){alert(res.error);return;}
+    var d=res.data;
+    document.getElementById('f-name').value=d.name||'';
+    document.getElementById('f-ip').value=d.ip||'';
+    document.getElementById('f-dtype').value=d.device_type||'huawei';
+    document.getElementById('f-group').value=d.group||'';
+    document.getElementById('f-user').value=d.username||'';
+    document.getElementById('f-pwd').value='';
+    document.getElementById('f-extra').value=d.extra?JSON.stringify(d.extra,null,2):'{}';
+    document.getElementById('f-enabled').value=d.enabled?'true':'false';
+    document.getElementById('mt').textContent='编辑设备 — '+d.name;
+    document.getElementById('modal').classList.add('show');
+  });
+}
+function clrF(){['f-name','f-ip','f-user','f-pwd'].forEach(function(i){document.getElementById(i).value='';});document.getElementById('f-dtype').value='huawei';document.getElementById('f-group').value='';document.getElementById('f-extra').value='{}';document.getElementById('f-enabled').value='true';}
+function closeM(){document.getElementById('modal').classList.remove('show');}
+function gck(n){var v=document.cookie.match('(^|;) ?'+n+'=([^;]*)(;|$)');return v?v[2]:null;}
+function capBadges(caps){
+  if(caps===null||caps===undefined)return '<span class="cap-muted">未检测</span>';
+  if(!caps.length)return '<span class="cap-muted">无特性</span>';
+  return caps.map(function(c){return '<span class="cap-b">'+c+'</span>';}).join('');
+}
+function discoverCap(id){
+  var btn=document.getElementById('btn-disc-'+id);
+  btn.classList.add('busy');btn.textContent='检测中…';
+  fetch('/new/device/capability/',{method:'POST',body:new URLSearchParams({uid:id,action:'discover'}),headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    btn.classList.remove('busy');btn.textContent='检测能力';
+    if(res.status){
+      document.getElementById('caps-'+id).innerHTML=capBadges(res.caps);
+    }else{alert('检测失败：'+res.error);}
+  }).catch(function(e){btn.classList.remove('busy');btn.textContent='检测能力';alert('请求异常：'+e);});
+}
+function toggleProtocol(id){
+  var btn=document.getElementById('btn-prot-'+id);
+  fetch('/new/device/capability/',{method:'POST',body:new URLSearchParams({uid:id,action:'toggle'}),headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    if(res.status){
+      if(res.protocol){btn.classList.add('on');btn.textContent='协议开';}
+      else{btn.classList.remove('on');btn.textContent='协议关';}
+    }else{alert('操作失败：'+res.error);}
+  });
+}
+function doSave(){
+  var fd=new FormData();
+  fd.append('name',document.getElementById('f-name').value);
+  fd.append('ip',document.getElementById('f-ip').value);
+  fd.append('device_type',document.getElementById('f-dtype').value);
+  fd.append('group',document.getElementById('f-group').value);
+  fd.append('username',document.getElementById('f-user').value);
+  var pwd=document.getElementById('f-pwd').value;
+  if(pwd)fd.append('password',pwd);
+  fd.append('extra',document.getElementById('f-extra').value||'{}');
+  fd.append('enabled',document.getElementById('f-enabled').value);
+  var url=_eid?'/new/device/edit/?uid='+_eid:'/new/device/add/';
+  fetch(url,{method:'POST',body:fd,headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    if(res.status){closeM();location.reload();}else{alert('保存失败：'+res.error);}
+  });
+}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeM();});
+</script>
+{% endblock %}

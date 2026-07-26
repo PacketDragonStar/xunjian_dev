@@ -1,0 +1,126 @@
+/* ===== 网络巡检平台 · 青蓝主题 (theme.css) ===== */
+:root{
+  --xj-sidebar:#0b3d34;
+  --xj-sidebar-active:#115c4e;
+  --xj-accent:#0F6E56;
+  --xj-accent-2:#1D9E75;
+  --xj-accent-soft:#E1F5EE;
+  --xj-topbar:#ffffff;
+  --xj-content:#f4f6f8;
+  --xj-card:#ffffff;
+  --xj-border:#e6eaef;
+  --xj-border-2:#eef1f5;
+  --xj-text:#1f2937;
+  --xj-text-2:#6b7280;
+  --xj-text-3:#9aa3af;
+  /* 状态色 */
+  --xj-ok:#1f9d55;   --xj-ok-bg:#e6f6ec;
+  --xj-run:#2563eb;  --xj-run-bg:#e6f0fe;
+  --xj-warn:#b7791f; --xj-warn-bg:#fdf3e3;
+  --xj-fail:#d14343; --xj-fail-bg:#fdeaea;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:"Segoe UI","Microsoft YaHei",-apple-system,system-ui,sans-serif;color:var(--xj-text);background:var(--xj-content);font-size:13px;}
+
+/* 布局骨架 */
+.xj-app{display:flex;min-height:100vh;}
+.xj-sidebar{width:232px;background:var(--xj-sidebar);color:#cdeee4;position:fixed;top:0;bottom:0;left:0;overflow-y:auto;flex-shrink:0;}
+.xj-main{margin-left:232px;flex:1;min-width:0;display:flex;flex-direction:column;}
+.xj-topbar{height:56px;background:var(--xj-topbar);border-bottom:1px solid var(--xj-border);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:20;}
+.xj-content{padding:22px 24px;flex:1;}
+
+/* 侧边栏品牌 */
+.xj-brand{display:flex;align-items:center;gap:11px;padding:18px 20px;color:#fff;font-size:15px;font-weight:600;border-bottom:1px solid rgba(255,255,255,.08);}
+.xj-logo{width:34px;height:34px;border-radius:9px;background:var(--xj-accent-2);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:15px;}
+
+/* 侧边栏导航 */
+.xj-nav{padding:12px 0 24px;}
+.xj-nav-group{padding:14px 20px 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.42);}
+.xj-nav a{display:block;padding:9px 20px;color:rgba(255,255,255,.82);text-decoration:none;font-size:13px;line-height:1.2;}
+.xj-nav a:hover{background:rgba(255,255,255,.06);color:#fff;}
+.xj-nav a.active{background:var(--xj-sidebar-active);color:#fff;border-left:3px solid var(--xj-accent-2);padding-left:17px;}
+
+/* 顶栏 */
+.xj-top-title{font-size:15px;font-weight:600;color:var(--xj-text);}
+.xj-menu-btn{display:none;border:none;background:transparent;font-size:18px;color:var(--xj-text-2);cursor:pointer;margin-right:6px;}
+.xj-user{position:relative;}
+.xj-user-toggle{color:var(--xj-text);text-decoration:none;font-size:13px;cursor:pointer;}
+.xj-user-menu{display:none;position:absolute;right:0;top:135%;background:#fff;border:1px solid var(--xj-border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.08);min-width:120px;overflow:hidden;}
+.xj-user-menu a{display:block;padding:9px 14px;color:var(--xj-text);text-decoration:none;font-size:13px;}
+.xj-user-menu a:hover{background:var(--xj-accent-soft);}
+.xj-user:hover .xj-user-menu{display:block;}
+
+/* 卡片 */
+.xj-card{background:var(--xj-card);border:1px solid var(--xj-border);border-radius:10px;padding:16px 18px;}
+.xj-card h3{margin:0 0 12px;font-size:14px;font-weight:600;color:var(--xj-text);}
+
+/* KPI 卡 */
+.xj-kpi{display:flex;align-items:center;gap:12px;}
+.xj-kpi-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px;flex-shrink:0;}
+.xj-kpi-label{color:var(--xj-text-2);font-size:12px;}
+.xj-kpi-num{font-size:24px;font-weight:600;line-height:1.1;margin-top:2px;}
+
+/* 状态徽章 */
+.xj-badge{display:inline-block;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:500;}
+.xj-badge.ok{background:var(--xj-ok-bg);color:var(--xj-ok);}
+.xj-badge.run{background:var(--xj-run-bg);color:var(--xj-run);}
+.xj-badge.warn{background:var(--xj-warn-bg);color:var(--xj-warn);}
+.xj-badge.fail{background:var(--xj-fail-bg);color:var(--xj-fail);}
+
+/* 进度条 */
+.xj-progress{height:8px;background:var(--xj-border-2);border-radius:6px;overflow:hidden;}
+.xj-progress>i{display:block;height:100%;background:var(--xj-accent);border-radius:6px;}
+
+/* 表格 */
+.xj-table{width:100%;border-collapse:collapse;}
+.xj-table thead th{background:#f7f9fb;color:var(--xj-text-2);font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;padding:10px 12px;border-bottom:1px solid var(--xj-border);text-align:left;}
+.xj-table tbody td{padding:11px 12px;border-bottom:1px solid var(--xj-border-2);font-size:13px;}
+.xj-table tbody tr:hover{background:#fafcfb;}
+.xj-link{color:var(--xj-accent);text-decoration:none;cursor:pointer;}
+.xj-link:hover{text-decoration:underline;}
+
+/* 网格 */
+.xj-grid{display:grid;gap:14px;}
+.xj-row{display:grid;gap:14px;margin-top:14px;}
+
+/* 兼容旧页面可能使用的类 */
+.hidden-column{display:none;}
+.highlight-red{color:red;}
+
+/* 响应式：窄屏侧边栏可收起 */
+@media(max-width:860px){
+  .xj-sidebar{transform:translateX(-100%);transition:transform .2s;z-index:50;}
+  body.xj-nav-open .xj-sidebar{transform:none;}
+  .xj-main{margin-left:0;}
+  .xj-menu-btn{display:block;}
+}
+
+/* ══════════════════════════════════════════════
+   统一 Bootstrap 主色 → 青蓝（覆盖 btn-primary 等）
+   这样全站历史页面的蓝色按钮自动跟随主题，无需逐个改
+   ══════════════════════════════════════════════ */
+.btn-primary,
+.btn-primary:focus,
+.btn-primary:active{
+  background:var(--xj-accent)!important;
+  border-color:var(--xj-accent)!important;
+  color:#fff!important;
+}
+.btn-primary:hover{
+  background:var(--xj-accent-2)!important;
+  border-color:var(--xj-accent-2)!important;
+  color:#fff!important;
+}
+.open>.dropdown-toggle.btn-primary{
+  background:var(--xj-accent-2)!important;
+  border-color:var(--xj-accent-2)!important;
+}
+.btn-outline-primary{
+  background:transparent!important;
+  color:var(--xj-accent)!important;
+  border:1px solid var(--xj-accent)!important;
+}
+.btn-outline-primary:hover{
+  background:var(--xj-accent)!important;
+  color:#fff!important;
+}

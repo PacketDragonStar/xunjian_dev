@@ -1,0 +1,419 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+  .fr-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:16px;}
+  .fr-head h2{margin:0 0 4px;font-size:19px;font-weight:600;}
+  .fr-sub{color:var(--xj-text-2);font-size:12px;line-height:1.7;}
+  .fr-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .fr-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:13px;}
+  .fr-bar-label{width:78px;color:var(--xj-text);flex-shrink:0;text-align:right;}
+  .fr-bar{flex:1;height:14px;background:var(--xj-border-2);border-radius:7px;overflow:hidden;min-width:60px;}
+  .fr-bar>i{display:block;height:100%;border-radius:7px;background:var(--xj-accent);}
+  .fr-bar-num{width:42px;text-align:left;color:var(--xj-text-2);font-variant-numeric:tabular-nums;}
+  .fr-legend{display:flex;gap:14px;font-size:12px;color:var(--xj-text-2);margin-top:10px;flex-wrap:wrap;}
+  .fr-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle;}
+  .sev-p0{color:#fff;background:#d14343;padding:2px 9px;border-radius:10px;font-size:11px;}
+  .sev-p1{color:#fff;background:#b7791f;padding:2px 9px;border-radius:10px;font-size:11px;}
+  .sev-p2{color:#fff;background:#9aa3af;padding:2px 9px;border-radius:10px;font-size:11px;}
+  .fr-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px;}
+  .fr-mini{background:var(--xj-content);border-radius:8px;padding:10px 12px;}
+  .fr-mini .n{font-size:20px;font-weight:600;}
+  .fr-mini .l{font-size:11px;color:var(--xj-text-2);margin-top:2px;}
+  /* —— 分析层样式 —— */
+  .grade-card{display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
+  .grade-badge{width:104px;height:104px;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 10px 26px rgba(0,0,0,.14);}
+  .grade-badge .g{font-size:46px;font-weight:800;line-height:1;}
+  .grade-badge .gl{font-size:13px;margin-top:3px;opacity:.94;}
+  .grade-meta{flex:1;min-width:260px;}
+  .grade-meta .nv{font-size:14px;color:var(--xj-text);line-height:1.85;}
+  .grade-scores{display:flex;gap:26px;margin-top:12px;flex-wrap:wrap;}
+  .grade-scores .s{font-size:12px;color:var(--xj-text-2);}
+  .grade-scores .s b{display:block;font-size:21px;color:var(--xj-text);font-weight:600;font-variant-numeric:tabular-nums;}
+  .trend-banner{font-size:13px;color:var(--xj-text);background:var(--xj-accent-soft);border-radius:8px;padding:9px 13px;margin-bottom:14px;}
+  .trend-row{display:flex;align-items:center;gap:12px;margin-bottom:11px;font-size:12px;}
+  .trend-row .tl{width:92px;color:var(--xj-text-2);text-align:right;flex-shrink:0;}
+  .trend-track{flex:1;height:28px;background:var(--xj-border-2);border-radius:6px;overflow:hidden;display:flex;}
+  .trend-track>span{display:block;height:100%;}
+  .trend-row .tr{width:60px;text-align:left;font-weight:600;font-variant-numeric:tabular-nums;}
+  .delta-up{color:var(--xj-fail);}
+  .delta-down{color:var(--xj-ok);}
+  .delta-flat{color:var(--xj-text-2);}
+  .fm-tag{font-size:10px;padding:1px 7px;border-radius:9px;margin-left:6px;vertical-align:middle;}
+  .fm-sys{background:#fde8e8;color:#b91c1c;}
+  .fm-loc{background:#e7f0ff;color:#1d4ed8;}
+  .rec-list{margin:0;padding:0;list-style:none;}
+  .rec-list li{position:relative;padding:10px 14px 10px 40px;background:var(--xj-content);border:1px solid var(--xj-border);border-radius:9px;margin-bottom:9px;font-size:13.5px;line-height:1.7;}
+  .rec-list li:before{content:"▸";position:absolute;left:16px;top:10px;color:var(--xj-accent);font-weight:700;}
+  .cov-bar{height:22px;background:var(--xj-border-2);border-radius:11px;overflow:hidden;}
+  .cov-bar>i{display:block;height:100%;background:var(--xj-accent);}
+  .ns-box{max-height:160px;overflow:auto;background:var(--xj-content);border:1px solid var(--xj-border);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--xj-text-2);line-height:1.9;}
+  .sec-tip{font-size:12px;color:var(--xj-text-2);margin:-6px 0 12px;}
+  @media print{
+    .xj-sidebar,.xj-topbar,.fr-tools{display:none!important;}
+    .xj-main{margin-left:0!important;}
+    .xj-card{box-shadow:none;border:1px solid #ddd;}
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div>
+  <div class="fr-head">
+    <div>
+      <h2>项目整体巡检态势分析报告</h2>
+      <div class="fr-sub">
+        生成时间：{{ now }} ·
+        分析范围：<b>{{ site|default:"全部站点" }}</b> ·
+        台账锚点：{{ stats.latest_sync|default:"无" }} ·
+        最近巡检：{{ stats.latest_run_time|default:"无" }}<br>
+        说明：本报告对全部设备做<b>整体总结与归因分析</b>（健康评级 / 跨轮次趋势 / 故障模式 / 风险集中度 / 覆盖缺口），异常口径为<b>累计未确认（待处理）</b>。
+      </div>
+    </div>
+    <div class="fr-tools">
+      <form method="get" style="display:flex;gap:8px;align-items:center;">
+        <select name="site" class="form-control" style="width:auto;display:inline-block;" onchange="this.form.submit()">
+          <option value="">全部站点</option>
+          {% for s in sites %}<option value="{{ s }}" {% if s == site %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+      </form>
+      <a class="btn btn-primary btn-sm" href="/new/report/overview/export/?site={{ site }}">导出 Excel</a>
+      <button class="btn btn-default btn-sm" onclick="window.print()">打印</button>
+    </div>
+  </div>
+
+  {# ══ 1. 整体健康评级（一句话总结） ══ #}
+  <div class="xj-card">
+    <h3>一、整体健康评级</h3>
+    <div class="grade-card">
+      <div class="grade-badge" style="background:{{ stats.grade_color }};">
+        <span class="g">{{ stats.grade }}</span>
+        <span class="gl">{{ stats.grade_label }}</span>
+      </div>
+      <div class="grade-meta">
+        <div class="nv">{{ stats.narrative }}</div>
+        <div class="grade-scores">
+          <div class="s">综合得分<b>{{ stats.blended_score }}</b></div>
+          <div class="s">已巡检健康分<b>{{ stats.health_score }}</b></div>
+          <div class="s">巡检覆盖度<b>{{ stats.coverage_pct }}%</b></div>
+          <div class="s">待处理异常<b>{{ stats.total_anom }}</b></div>
+          <div class="s">涉及设备<b>{{ stats.open_dev_n }}</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ══ 2. 跨轮次趋势分析 ══ #}
+  <div class="xj-card" style="margin-top:14px;">
+    <h3>二、整体异常走势（跨轮次趋势）</h3>
+    <div class="sec-tip">按巡检轮次统计每轮发现的异常项数量与严重级别构成，反映项目整体态势是转好还是转差。</div>
+    {% if stats.trend %}
+      {% if stats.overall_delta is not None %}
+      <div class="trend-banner">
+        近 {{ stats.trend|length }} 轮整体异常项：
+        {% if stats.overall_delta > 0 %}<span class="delta-up">▲ 上升 {{ stats.overall_delta }} 项</span>
+        {% elif stats.overall_delta < 0 %}<span class="delta-down">▼ 下降 {{ stats.overall_delta|cut:"-" }} 项</span>
+        {% else %}<span class="delta-flat">— 持平</span>{% endif %}
+        （首轮 {{ stats.trend_first_total }} 项 → 末轮 {{ stats.trend_last_total }} 项）
+      </div>
+      {% endif %}
+      {% for t in stats.trend %}
+      <div class="trend-row">
+        <span class="tl" title="{{ t.time }}">{{ t.time|slice:":10" }}</span>
+        <div class="trend-track" title="P0 {{ t.p0 }} / P1 {{ t.p1 }} / P2 {{ t.p2 }} · 设备 {{ t.device_count }} · 异常率 {{ t.rate }}%">
+          <span style="width:{% widthratio t.p0 stats.trend_max 100 %}%;background:#d14343;"></span>
+          <span style="width:{% widthratio t.p1 stats.trend_max 100 %}%;background:#b7791f;"></span>
+          <span style="width:{% widthratio t.p2 stats.trend_max 100 %}%;background:#9aa3af;"></span>
+        </div>
+        <span class="tr">
+          {% if t.delta is not None %}
+            {% if t.delta > 0 %}<span class="delta-up">▲{{ t.delta }}</span>
+            {% elif t.delta < 0 %}<span class="delta-down">▼{{ t.delta|cut:"-" }}</span>
+            {% else %}<span class="delta-flat">—</span>{% endif %}
+          {% else %}<span class="delta-flat">—</span>{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+      <div class="fr-legend">
+        <span><i style="background:#d14343;"></i>P0 高危</span>
+        <span><i style="background:#b7791f;"></i>P1 重要</span>
+        <span><i style="background:#9aa3af;"></i>P2 一般</span>
+        <span style="margin-left:auto;">右侧 ▲/▼ 为该轮相对上一轮的异常项变化</span>
+      </div>
+    {% else %}
+      <div style="color:var(--xj-text-3);padding:26px;text-align:center;">暂无巡检轮次数据，请先执行巡检。</div>
+    {% endif %}
+  </div>
+
+  {# ══ 3. 故障模式归因（根因分析） ══ #}
+  <div class="xj-card" style="margin-top:14px;">
+    <h3>三、故障模式归因（高频巡检项根因）</h3>
+    <div class="sec-tip">按巡检项聚合待处理异常，识别"系统性"（影响 ≥3 台）与"局部"问题，定位最该优先排查的根因。</div>
+    <table class="xj-table">
+      <thead><tr><th>巡检项（命令）</th><th>等级</th><th>影响设备数</th><th>命中次数</th><th>占比</th></tr></thead>
+      <tbody>
+      {% for fm in stats.failure_modes %}
+        <tr>
+          <td><code>{{ fm.command }}</code>{% if fm.systemic %}<span class="fm-tag fm-sys">系统性</span>{% else %}<span class="fm-tag fm-loc">局部</span>{% endif %}</td>
+          <td>{% if fm.severity == 'P0' %}<span class="sev-p0">P0</span>{% elif fm.severity == 'P1' %}<span class="sev-p1">P1</span>{% else %}<span class="sev-p2">P2</span>{% endif %}</td>
+          <td><b>{{ fm.device_count }}</b> 台</td>
+          <td>{{ fm.count }}</td>
+          <td style="min-width:130px;"><div class="fr-bar"><i style="width:{% widthratio fm.count stats.fm_max 100 %}%;background:var(--xj-fail)"></i></div></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:var(--xj-text-3);padding:26px;">暂无待处理异常 🎉</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ══ 4. 风险集中度 ══ #}
+  <div class="xj-row" style="grid-template-columns:1fr 1fr;margin-top:14px;">
+    <div class="xj-card">
+      <h3>四-1、风险集中度（按角色）</h3>
+      <div class="sec-tip">异常率 = 该角色待处理异常设备数 ÷ 角色设备数。</div>
+      {% for r in stats.risk_by_role %}<div class="fr-bar-row">
+        <span class="fr-bar-label">{{ r.role }}</span>
+        <div class="fr-bar"><i style="width:{{ r.rate }}%;background:{% if r.rate >= 60 %}var(--xj-fail){% elif r.rate >= 30 %}var(--xj-warn){% else %}var(--xj-ok){% endif %}"></i></div>
+        <span class="fr-bar-num">{{ r.rate }}%</span>
+      </div>{% empty %}<div style="color:var(--xj-text-3);">无数据</div>{% endfor %}
+    </div>
+    <div class="xj-card">
+      <h3>四-2、风险集中度（按站点）</h3>
+      <div class="sec-tip">异常率 = 该站点待处理异常设备数 ÷ 站点设备数。</div>
+      {% for r in stats.risk_by_site %}<div class="fr-bar-row">
+        <span class="fr-bar-label">{{ r.site }}</span>
+        <div class="fr-bar"><i style="width:{{ r.rate }}%;background:{% if r.rate >= 60 %}var(--xj-fail){% elif r.rate >= 30 %}var(--xj-warn){% else %}var(--xj-ok){% endif %}"></i></div>
+        <span class="fr-bar-num">{{ r.rate }}%</span>
+      </div>{% empty %}<div style="color:var(--xj-text-3);">无数据</div>{% endfor %}
+    </div>
+  </div>
+
+  {# ══ 5. 覆盖与缺口 ══ #}
+  <div class="xj-row" style="grid-template-columns:340px 1fr;margin-top:14px;">
+    <div class="xj-card">
+      <h3>五-1、巡检覆盖度</h3>
+      <div style="text-align:center;margin:6px 0 12px;">
+        <div style="font-size:34px;font-weight:700;color:var(--xj-accent);">{{ stats.coverage_pct }}%</div>
+        <div style="font-size:12px;color:var(--xj-text-2);">已建台账 {{ stats.inspected }} / 本范围设备 {{ stats.onsite_total }}</div>
+      </div>
+      <div class="cov-bar"><i style="width:{{ stats.coverage_pct }}%"></i></div>
+      <div class="sec-tip" style="margin-top:12px;">覆盖度低意味着部分设备从未被巡检，整体态势存在盲区，结论的代表性受限。</div>
+    </div>
+    <div class="xj-card">
+      <h3>五-2、覆盖缺口（启用但未巡检设备）</h3>
+      <div class="sec-tip">以下 {{ stats.never_synced|length }} 台启用设备尚未建台账 / 未巡检，需优先补覆盖。</div>
+      {% if stats.never_synced %}
+      <div class="ns-box">{{ stats.never_synced|join:", " }}</div>
+      {% else %}
+      <div style="color:var(--xj-ok);padding:14px 0;">✓ 本范围设备已全部纳入巡检，无覆盖缺口。</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ══ 6. 自动建议 ══ #}
+  <div class="xj-card" style="margin-top:14px;">
+    <h3>六、整体处置建议（自动生成）</h3>
+    <ul class="rec-list">
+      {% for rec in stats.recommendations %}<li>{{ rec }}</li>{% empty %}
+      <li style="color:var(--xj-ok);">暂无显著风险，项目整体态势平稳 🎉</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div style="text-align:center;color:var(--xj-text-3);font-size:12px;margin:18px 0 6px;">— 以下为明细数据，可供逐条核查 —</div>
+
+  {# ══ 附录 A：KPI + 资产健康 + 分布 ══ #}
+  <div class="xj-grid" style="grid-template-columns:repeat(5,1fr);">
+    <div class="xj-card"><div class="xj-kpi">
+      <div class="xj-kpi-ico" style="background:var(--xj-accent-soft);color:var(--xj-accent);">设</div>
+      <div><div class="xj-kpi-label">设备总数</div><div class="xj-kpi-num">{{ stats.total }}</div></div>
+    </div></div>
+    <div class="xj-card"><div class="xj-kpi">
+      <div class="xj-kpi-ico" style="background:var(--xj-accent-soft);color:var(--xj-accent);">账</div>
+      <div><div class="xj-kpi-label">已建台账</div><div class="xj-kpi-num">{{ stats.cmdb_count }}</div></div>
+    </div></div>
+    <div class="xj-card"><div class="xj-kpi">
+      <div class="xj-kpi-ico" style="background:var(--xj-warn-bg);color:var(--xj-warn);">警</div>
+      <div><div class="xj-kpi-label">资源预警设备</div><div class="xj-kpi-num">{{ stats.warn_count }}</div></div>
+    </div></div>
+    <div class="xj-card"><div class="xj-kpi">
+      <div class="xj-kpi-ico" style="background:var(--xj-fail-bg);color:var(--xj-fail);">异</div>
+      <div><div class="xj-kpi-label">待处理异常</div><div class="xj-kpi-num">{{ stats.total_anom }}</div></div>
+    </div></div>
+    <div class="xj-card"><div class="xj-kpi">
+      <div class="xj-kpi-ico" style="background:var(--xj-fail-bg);color:var(--xj-fail);">危</div>
+      <div><div class="xj-kpi-label">高危 P0+P1</div><div class="xj-kpi-num">{{ stats.high }}</div></div>
+    </div></div>
+  </div>
+
+  <div class="xj-row" style="grid-template-columns:300px 1fr;">
+    <div class="xj-card">
+      <h3>资产健康度</h3>
+      <div style="display:flex;align-items:center;gap:18px;">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="60" fill="none" stroke="#eef1f5" stroke-width="16"/>
+          <circle cx="75" cy="75" r="60" fill="none" stroke="var(--xj-ok)" stroke-width="16"
+                  stroke-dasharray="{{ donut.ok }} {{ donut.C }}" transform="rotate(-90 75 75)"/>
+          <circle cx="75" cy="75" r="60" fill="none" stroke="var(--xj-warn)" stroke-width="16"
+                  stroke-dasharray="{{ donut.warn }} {{ donut.C }}" stroke-dashoffset="-{{ donut.ok }}" transform="rotate(-90 75 75)"/>
+          <circle cx="75" cy="75" r="60" fill="none" stroke="#cbd5e1" stroke-width="16"
+                  stroke-dasharray="{{ donut.sync }} {{ donut.C }}" stroke-dashoffset="-{{ donut.warn_offset }}" transform="rotate(-90 75 75)"/>
+          <text x="75" y="71" text-anchor="middle" font-size="26" font-weight="700" fill="#1f2937">{{ stats.healthy_pct }}%</text>
+          <text x="75" y="90" text-anchor="middle" font-size="11" fill="#6b7280">健康率</text>
+        </svg>
+        <div style="font-size:12px;color:var(--xj-text-2);line-height:2;">
+          <div><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--xj-ok);margin-right:6px;"></span>正常 {{ stats.synced_ok }}</div>
+          <div><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--xj-warn);margin-right:6px;"></span>资源预警 {{ stats.warn_count }}</div>
+          <div><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#cbd5e1;margin-right:6px;"></span>未同步台账 {{ stats.not_synced }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="xj-card">
+      <h3>设备分布（按站点 / 角色）</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <div style="font-size:12px;color:var(--xj-text-2);margin-bottom:8px;">站点</div>
+          {% for d in stats.site_dist %}<div class="fr-bar-row">
+            <span class="fr-bar-label">{{ d.name }}</span>
+            <div class="fr-bar"><i style="width:{{ d.pct }}%"></i></div>
+            <span class="fr-bar-num">{{ d.count }}</span>
+          </div>{% empty %}<div style="color:var(--xj-text-3);">无数据</div>{% endfor %}
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--xj-text-2);margin-bottom:8px;">角色</div>
+          {% for d in stats.role_dist %}<div class="fr-bar-row">
+            <span class="fr-bar-label">{{ d.name }}</span>
+            <div class="fr-bar"><i style="width:{{ d.pct }}%;background:var(--xj-accent-2)"></i></div>
+            <span class="fr-bar-num">{{ d.count }}</span>
+          </div>{% empty %}<div style="color:var(--xj-text-3);">无数据</div>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ══ 附录 B：异常严重级别 + 异常分布 ══ #}
+  <div class="xj-row" style="grid-template-columns:1fr 1fr;">
+    <div class="xj-card">
+      <h3>异常严重级别分布</h3>
+      <div class="fr-mini-grid">
+        {% for s in stats.sev_dist %}<div class="fr-mini">
+          <div class="n" style="color:{{ s.color }}">{{ s.count }}</div>
+          <div class="l">{{ s.sev }}（{{ s.pct }}%）</div>
+        </div>{% endfor %}
+      </div>
+      <div style="margin-top:14px;">
+        {% for s in stats.sev_dist %}<div class="fr-bar-row">
+          <span class="fr-bar-label">{{ s.sev }}</span>
+          <div class="fr-bar"><i style="width:{{ s.pct }}%;background:{{ s.color }}"></i></div>
+          <span class="fr-bar-num">{{ s.count }}</span>
+        </div>{% endfor %}
+      </div>
+    </div>
+    <div class="xj-card">
+      <h3>异常分布（按站点 / 角色）</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <div style="font-size:12px;color:var(--xj-text-2);margin-bottom:8px;">站点</div>
+          {% for d in stats.site_anom_dist %}<div class="fr-bar-row">
+            <span class="fr-bar-label">{{ d.name }}</span>
+            <div class="fr-bar"><i style="width:{{ d.pct }}%;background:var(--xj-fail)"></i></div>
+            <span class="fr-bar-num">{{ d.count }}</span>
+          </div>{% empty %}<div style="color:var(--xj-text-3);">暂无异常</div>{% endfor %}
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--xj-text-2);margin-bottom:8px;">角色</div>
+          {% for d in stats.role_anom_dist %}<div class="fr-bar-row">
+            <span class="fr-bar-label">{{ d.name }}</span>
+            <div class="fr-bar"><i style="width:{{ d.pct }}%;background:var(--xj-fail)"></i></div>
+            <span class="fr-bar-num">{{ d.count }}</span>
+          </div>{% empty %}<div style="color:var(--xj-text-3);">暂无异常</div>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ══ 附录 C：资源预警 + 问题清单 ══ #}
+  <div class="xj-card" style="margin-top:14px;">
+    <h3>资源水位预警清单（CPU≥80% 或 内存空闲&lt;20%）</h3>
+    <table class="xj-table">
+      <thead><tr><th>设备</th><th>站点</th><th>角色</th><th>CPU(5s)%</th><th>内存空闲%</th><th>运行天数</th><th>预警项</th></tr></thead>
+      <tbody>
+      {% for w in stats.warn_list %}
+        <tr>
+          <td>{{ w.name }}</td><td>{{ w.site }}</td><td>{{ w.role }}</td>
+          <td>{% if w.cpu %}<span style="color:var(--xj-fail);font-weight:600;">{{ w.cpu }}</span>{% else %}-{% endif %}</td>
+          <td>{% if w.mem %}<span style="color:var(--xj-fail);font-weight:600;">{{ w.mem }}</span>{% else %}-{% endif %}</td>
+          <td>{{ w.uptime|default:"-" }}</td>
+          <td>{{ w.reasons }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:var(--xj-text-3);padding:26px;">无资源水位预警设备 🎉</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="xj-card" style="margin-top:14px;">
+    <h3>问题清单（按巡检项 + 异常说明聚合 · 待处理）</h3>
+    <table class="xj-table">
+      <thead><tr><th>等级</th><th>巡检项</th><th>异常说明</th><th>影响设备数</th><th>涉及设备</th></tr></thead>
+      <tbody>
+      {% for it in stats.issues %}
+        <tr>
+          <td>{% if it.severity == 'P0' %}<span class="sev-p0">P0</span>{% elif it.severity == 'P1' %}<span class="sev-p1">P1</span>{% else %}<span class="sev-p2">P2</span>{% endif %}</td>
+          <td><code>{{ it.command }}</code></td>
+          <td>{{ it.notes }}</td>
+          <td>{{ it.device_count }}</td>
+          <td style="color:var(--xj-text-2);">{{ it.devices|join:", " }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:var(--xj-text-3);padding:26px;">暂无待处理异常 🎉</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ══ 附录 D：Top 设备 + 最近巡检 ══ #}
+  <div class="xj-row" style="grid-template-columns:1fr 1fr;margin-top:14px;">
+    <div class="xj-card">
+      <h3>异常 Top 设备</h3>
+      <table class="xj-table">
+        <thead><tr><th>设备</th><th>IP</th><th>站点</th><th>角色</th><th>异常项数</th><th>最高级别</th></tr></thead>
+        <tbody>
+        {% for d in stats.top_devices %}
+          <tr>
+            <td>{{ d.name }}</td>
+            <td>{% if d.meta %}{{ d.meta.ip }}{% else %}-{% endif %}</td>
+            <td>{% if d.meta %}{{ d.meta.site }}{% else %}-{% endif %}</td>
+            <td>{% if d.meta %}{{ d.meta.role }}{% else %}-{% endif %}</td>
+            <td><b>{{ d.count }}</b></td>
+            <td>{% if d.sev == 'P0' %}<span class="sev-p0">P0</span>{% elif d.sev == 'P1' %}<span class="sev-p1">P1</span>{% else %}<span class="sev-p2">P2</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" style="text-align:center;color:var(--xj-text-3);padding:22px;">暂无异常设备 🎉</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="xj-card">
+      <h3>最近巡检（逐轮明细）</h3>
+      <table class="xj-table">
+        <thead><tr><th>巡检时间</th><th>操作人</th><th>设备数</th><th>正常</th><th>异常</th><th>失败</th><th>结果</th></tr></thead>
+        <tbody>
+        {% for r in stats.recent %}
+          <tr>
+            <td>{{ r.time }}</td><td>{{ r.operator }}</td><td>{{ r.device_count }}</td>
+            <td style="color:var(--xj-ok);">{{ r.ok }}</td>
+            <td style="color:var(--xj-warn);">{{ r.anomaly }}</td>
+            <td style="color:var(--xj-fail);">{{ r.failed }}</td>
+            <td><span class="xj-badge {% if r.result == '正常' %}ok{% elif '异常' in r.result %}warn{% else %}fail{% endif %}">{{ r.result }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" style="text-align:center;color:var(--xj-text-3);padding:22px;">暂无巡检记录</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

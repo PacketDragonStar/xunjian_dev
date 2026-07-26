@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+.env/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database
+*.sqlite3
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / Environment
+.env
+.env.local
+*.secret
+
+# Binary
+*.exe
+
+# Debug output
+tmp_*
+classify_result.txt
+
+# Media files
+media/raw/
+media/parsed/
+
+# OS generated files
+python.exe
+
+# Large archives / logs
+*.tar
+*.tar.gz
+app02/logfile/
+db.sqlite3
+
+# Workbuddy
+.workbuddy/

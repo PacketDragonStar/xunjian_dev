@@ -1,0 +1,227 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--accent:#0F6E56;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;--ok:#1a7f37;--fail:#cf222e;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1100px;margin:0 auto;padding:26px 16px;}
+.tb{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.tb table{margin:0;}
+.tb thead th{background:#f6f8fa;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#57606a;border-bottom:2px solid var(--border);}
+.tb tbody tr:hover{background:#f6fbff;}
+.bk{padding:2px 9px;border-radius:20px;font-size:.74rem;font-weight:600;white-space:nowrap;}
+.bk-g{background:#dafbe1;color:#1a7f37;}.bk-b{background:#ddf4ff;color:#0550ae;}
+.bk-p{background:#fbefff;color:#8250df;}.bk-o{background:#fff1e5;color:#bc4c00;}
+.bk-gray{background:#f3f4f6;color:#57606a;}
+.xa{border:1px solid var(--border);border-radius:4px;padding:2px 10px;font-size:.75rem;color:#57606a;text-decoration:none;background:transparent;margin-right:3px;}
+.xa:hover{background:#f6f8fa;}
+.xr{border:1px solid #ffcdd2;border-radius:4px;padding:2px 10px;font-size:.75rem;color:#cf222e;text-decoration:none;background:transparent;}
+.xr:hover{background:#fff0f0;}
+.modal-bd{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;}
+.modal-bd.show{display:flex;}
+.mb{background:var(--card);border-radius:10px;padding:24px 28px;width:580px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+.mb h5{margin:0 0 16px;font-weight:700;}
+.fr{margin-bottom:12px;}
+.fr label{display:block;font-size:.78rem;font-weight:600;color:#57606a;margin-bottom:3px;}
+.fr input,.fr select,.fr textarea{width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:.86rem;box-sizing:border-box;}
+.fr textarea{font-family:Consolas,monospace;font-size:.78rem;min-height:70px;resize:vertical;}
+.fr .ht{font-size:.72rem;color:#8c959f;margin-top:2px;}
+.mbt{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+.bs{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 22px;font-size:.88rem;cursor:pointer;}
+.bc{background:transparent;border:1px solid var(--border);border-radius:6px;padding:7px 18px;font-size:.88rem;cursor:pointer;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h4 style="margin:0;font-weight:700;">巡检项管理</h4>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <form method="get" style="display:flex;gap:8px;">
+        <input name="q" value="{{ search_data }}" placeholder="搜索名称或命令..." class="form-control" style="width:200px;font-size:.86rem;">
+        <button type="submit" class="btn btn-default btn-sm">搜索</button>
+      </form>
+      <button class="btn btn-primary btn-sm" onclick="openAdd()">+ 新增巡检项</button>
+      <a href="/new/import/" class="btn btn-default btn-sm">&#8659; AI批量导入</a>
+    </div>
+  </div>
+  <div class="tb">
+    <table class="table table-hover">
+      <thead><tr><th>名称</th><th>命令</th><th>能力标签</th><th>解析器</th><th>检查器</th><th>异常提示</th><th>超时</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody>
+      {% for item in queryset %}
+      <tr>
+        <td><strong style="font-size:.87rem;">{{ item.name }}</strong></td>
+        <td><code style="font-size:.79rem;">{{ item.command }}</code></td>
+        <td>{% if item.feature == 'base' %}<span class="bk bk-gray">基础</span>{% else %}<span class="bk bk-b">{{ item.get_feature_display }}</span>{% endif %}</td>
+        <td>
+          {% if item.parser == "raw" %}<span class="bk bk-gray">原始</span>
+          {% elif item.parser == "regex" %}<span class="bk bk-b">正则</span>
+          {% elif item.parser == "strip_ts" %}<span class="bk bk-o">去时间戳</span>
+          {% elif item.parser == "textfsm" %}<span class="bk bk-p">TextFSM</span>
+          {% else %}<span class="bk bk-gray">{{ item.parser }}</span>{% endif %}
+        </td>
+        <td>
+          {% if item.checker == "baseline" %}<span class="bk bk-g">基线对比</span>
+          {% elif item.checker == "threshold" %}<span class="bk bk-o">阈值</span>
+          {% elif item.checker == "count" %}<span class="bk bk-b">计数</span>
+          {% elif item.checker == "contains" %}<span class="bk bk-p">包含</span>
+          {% elif item.checker == "custom" %}<span class="bk bk-gray">自定义</span>
+          {% else %}<span class="bk bk-gray">{{ item.checker }}</span>{% endif %}
+        </td>
+        <td style="font-size:.82rem;color:#57606a;">{{ item.error_note|truncatechars:28 }}</td>
+        <td style="font-size:.82rem;">{{ item.timeout }}s</td>
+        <td>{% if item.enabled %}<span class="bk bk-g">启用</span>{% else %}<span class="bk bk-gray">禁用</span>{% endif %}</td>
+        <td>
+          <a href="#" class="xa" onclick="openEdit({{ item.id }})">编辑</a>
+          <a href="/new/checkitem/delete/?uid={{ item.id }}" class="xr" onclick="return confirm('确认删除该巡检项？')">删除</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9" style="text-align:center;color:#8c959f;padding:32px;">暂无巡检项{% if search_data %}（搜索：{{ search_data }}）{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:14px;"><ul class="pagination" style="float:right;">{{ page_string|safe }}</ul></div>
+</div>
+
+<div class="modal-bd" id="modal">
+  <div class="mb">
+    <h5 id="mt">新增巡检项</h5>
+    <div class="fr"><label>名称 *</label><input id="f-name" placeholder="查看OSPF邻居"></div>
+    <div class="fr"><label>命令 *</label><input id="f-cmd" placeholder="display ospf peer brief"></div>
+    <div class="fr">
+      <label>能力标签 <span style="font-weight:400;color:#8c959f;">(base 恒跑；其余需设备开启协议巡检且探测到才跑)</span></label>
+      <select id="f-feature">
+        <option value="base">基础(base)</option>
+        <option value="ospf">OSPF</option>
+        <option value="bgp">BGP</option>
+        <option value="vrrp">VRRP</option>
+        <option value="irf">IRF</option>
+        <option value="m-lag">M-LAG</option>
+        <option value="rbm">RBM</option>
+        <option value="security">安全域/策略</option>
+        <option value="lacp">链路聚合</option>
+      </select>
+    </div>
+    <div class="fr">
+      <label>解析器</label>
+      <select id="f-parser" onchange="upPH()">
+        <option value="raw">raw — 原始文本（直接对比）</option>
+        <option value="regex">regex — 正则提取数值</option>
+        <option value="strip_ts">strip_ts — 去除时间戳后对比</option>
+        <option value="textfsm">textfsm — TextFSM结构化解析</option>
+      </select>
+      <div class="ht" id="ph">原始文本，适合大多数场景</div>
+    </div>
+    <div class="fr">
+      <label>解析器配置 <span style="font-weight:400;color:#8c959f;">(JSON，可留空)</span></label>
+      <textarea id="f-pcfg" placeholder="{}"></textarea>
+      <div class="ht" id="pch"></div>
+    </div>
+    <div class="fr">
+      <label>检查器</label>
+      <select id="f-checker" onchange="upCH()">
+        <option value="baseline">baseline — 与基线文本对比</option>
+        <option value="threshold">threshold — 数值阈值判断</option>
+        <option value="count">count — 关键字计数</option>
+        <option value="contains">contains — 包含指定关键字</option>
+        <option value="custom">custom — 自定义函数</option>
+      </select>
+      <div class="ht" id="ch">与基线全文做相似度对比，配置示例：{"similarity": 1.0}</div>
+    </div>
+    <div class="fr">
+      <label>检查器配置 <span style="font-weight:400;color:#8c959f;">(JSON)</span></label>
+      <textarea id="f-ccfg" placeholder="{}"></textarea>
+      <div class="ht" id="cch"></div>
+    </div>
+    <div class="fr">
+      <label>对比清洗配置 <span style="font-weight:400;color:#8c959f;">(JSON，可留空)</span></label>
+      <textarea id="f-cstrip" placeholder='{"head_lines":3,"skip_patterns":["^2026-"]}'></textarea>
+      <div class="ht">对比差异前清洗文本（如去表头、过滤时间戳行）。示例：{"head_lines":4,"skip_patterns":["^\\d{4}-"]}</div>
+    </div>
+    <div class="fr">
+      <label>字段提取器</label>
+      <select id="f-extract">
+        <option value="">不提取</option>
+        <option value="memory">memory — 内存提取</option>
+      </select>
+      <div class="ht">对比页「提取字段」标签页结构化展示该命令提取的指标（仅展示，不影响判定）</div>
+    </div>
+    <div class="fr"><label>异常提示</label><input id="f-note" placeholder="请检查"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="fr"><label>超时(秒)</label><input id="f-timeout" type="number" value="30" min="5" max="300"></div>
+      <div class="fr"><label>状态</label><select id="f-enabled"><option value="true">启用</option><option value="false">禁用</option></select></div>
+    </div>
+    <div class="mbt">
+      <button class="bc" onclick="closeM()">取消</button>
+      <button class="bs" onclick="doSave()">保存</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+var _eid=null;
+var PH={raw:'原始文本，不做处理，适合大多数场景',regex:'配置示例：{"pattern":"CPU:(\\d+)%","group":1,"cast":"float"}',strip_ts:'配置示例：{"patterns":["\\d{4}-\\d{2}-\\d{2}.*"]}',textfsm:'配置示例：{"template":"cisco_nxos_show_interface.textfsm"}'};
+var CH={baseline:'配置示例：{"similarity":1.0}',threshold:'配置示例：{"warning":80,"operator":"<="}',count:'配置示例：{"keyword":"FULL/","expected":9,"expand_field":"ospf_nei"}',contains:'配置示例：{"must_contain":["synchronized","OK"]}',custom:'配置示例：{"func":"my_check_func"}'};
+function upPH(){var v=document.getElementById('f-parser').value;document.getElementById('ph').textContent=PH[v]||'';}
+function upCH(){var v=document.getElementById('f-checker').value;document.getElementById('ch').textContent=CH[v]||'';}
+function openAdd(){_eid=null;document.getElementById('mt').textContent='新增巡检项';clrF();document.getElementById('modal').classList.add('show');}
+function openEdit(id){
+  _eid=id;
+  fetch('/new/checkitem/detail/?uid='+id).then(r=>r.json()).then(function(res){
+    if(!res.status){alert(res.error);return;}
+    var d=res.data;
+    document.getElementById('f-name').value=d.name||'';
+    document.getElementById('f-cmd').value=d.command||'';
+    document.getElementById('f-feature').value=d.feature||'base';
+    document.getElementById('f-parser').value=d.parser||'raw';
+    document.getElementById('f-pcfg').value=d.parser_config?JSON.stringify(d.parser_config,null,2):'';
+    document.getElementById('f-checker').value=d.checker||'baseline';
+    document.getElementById('f-ccfg').value=d.checker_config?JSON.stringify(d.checker_config,null,2):'';
+    document.getElementById('f-note').value=d.error_note||'';
+    document.getElementById('f-timeout').value=d.timeout||30;
+    document.getElementById('f-enabled').value=d.enabled?'true':'false';
+    document.getElementById('f-cstrip').value=d.compare_strip?JSON.stringify(d.compare_strip):'';
+    document.getElementById('f-extract').value=d.extract_parser||'';
+    document.getElementById('mt').textContent='编辑巡检项 — '+d.name;
+    upPH();upCH();
+    document.getElementById('modal').classList.add('show');
+  });
+}
+function clrF(){
+  ['f-name','f-cmd','f-pcfg','f-ccfg','f-note','f-cstrip'].forEach(function(i){document.getElementById(i).value='';});
+  document.getElementById('f-feature').value='base';
+  document.getElementById('f-parser').value='raw';
+  document.getElementById('f-checker').value='baseline';
+  document.getElementById('f-timeout').value='30';
+  document.getElementById('f-enabled').value='true';
+  document.getElementById('f-extract').value='';
+  upPH();upCH();
+}
+function closeM(){document.getElementById('modal').classList.remove('show');}
+function gck(n){var v=document.cookie.match('(^|;) ?'+n+'=([^;]*)(;|$)');return v?v[2]:null;}
+function doSave(){
+  var fd=new FormData();
+  fd.append('name',document.getElementById('f-name').value);
+  fd.append('command',document.getElementById('f-cmd').value);
+  fd.append('feature',document.getElementById('f-feature').value);
+  fd.append('parser',document.getElementById('f-parser').value);
+  fd.append('parser_config',document.getElementById('f-pcfg').value||'null');
+  fd.append('checker',document.getElementById('f-checker').value);
+  fd.append('checker_config',document.getElementById('f-ccfg').value||'null');
+  fd.append('error_note',document.getElementById('f-note').value||'请检查');
+  fd.append('timeout',document.getElementById('f-timeout').value||30);
+  fd.append('enabled',document.getElementById('f-enabled').value);
+  fd.append('compare_strip',document.getElementById('f-cstrip').value||'');
+  fd.append('extract_parser',document.getElementById('f-extract').value||'');
+  var url=_eid?'/new/checkitem/edit/?uid='+_eid:'/new/checkitem/add/';
+  fetch(url,{method:'POST',body:fd,headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    if(res.status){closeM();location.reload();}else{alert('保存失败：'+res.error);}
+  });
+}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeM();});
+</script>
+{% endblock %}

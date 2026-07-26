@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--accent:#0F6E56;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1280px;margin:0 auto;padding:26px 16px;}
+.bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.bar h4{margin:0;font-weight:700;}
+.cnt{color:#57606a;font-size:.8rem;margin-left:8px;font-weight:400;}
+.filt{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.filt select,.filt input{height:32px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font-size:.85rem;background:#fff;}
+.filt input{width:230px;}
+.tb{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.tb table{margin:0;font-size:.85rem;width:100%;}
+.tb thead th{background:#f6f8fa;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#57606a;border-bottom:2px solid var(--border);white-space:nowrap;padding:10px 12px;text-align:left;}
+.tb tbody td{padding:9px 12px;border-bottom:1px solid #eef1f4;white-space:nowrap;}
+.tb tbody tr:hover{background:#f6fbff;}
+.bk{padding:2px 9px;border-radius:20px;font-size:.73rem;font-weight:600;white-space:nowrap;}
+.bk-g{background:#dafbe1;color:#1a7f37;}.bk-r{background:#ffebe9;color:#cf222e;}
+.bk-gray{background:#f3f4f6;color:#57606a;}
+.empty{padding:48px;text-align:center;color:#8c959f;font-size:.9rem;}
+code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:.78rem;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <div class="bar">
+    <h4>CMDB 接口台账<span class="cnt">共 {{ queryset|length }} 条</span></h4>
+    <form class="filt" method="get">
+      <select name="site" onchange="this.form.submit()">
+        <option value="">全部站点</option>
+        {% for s in sites %}<option value="{{ s }}" {% if s == site %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <select name="status" onchange="this.form.submit()">
+        <option value="">全部状态</option>
+        <option value="up" {% if status == 'up' %}selected{% endif %}>UP</option>
+        <option value="down" {% if status == 'down' %}selected{% endif %}>DOWN</option>
+      </select>
+      <input name="q" value="{{ q }}" placeholder="接口名 / 设备名 / 描述...">
+      <button class="btn btn-primary btn-sm" type="submit">搜索</button>
+    </form>
+  </div>
+  <div class="tb">
+    <table>
+      <thead><tr>
+        <th>设备</th><th>接口</th><th>操作状态</th><th>管理状态</th><th>速率</th><th>双工</th><th>VLAN</th><th>描述</th>
+      </tr></thead>
+      <tbody>
+      {% for it in queryset %}
+      <tr>
+        <td>{{ it.device.name }}</td>
+        <td><code>{{ it.name }}</code></td>
+        <td>{% if it.oper_status == 'UP' %}<span class="bk bk-g">UP</span>{% elif it.oper_status == 'DOWN' %}<span class="bk bk-r">DOWN</span>{% else %}<span class="bk bk-gray">{{ it.oper_status }}</span>{% endif %}</td>
+        <td>{{ it.admin_status }}</td>
+        <td>{% if it.speed_mbps %}{{ it.speed_mbps }}M{% else %}—{% endif %}</td>
+        <td>{{ it.duplex }}</td>
+        <td>{% if it.vlan_id != None %}{{ it.vlan_id }}{% else %}—{% endif %}</td>
+        <td>{{ it.description|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8"><div class="empty">暂无数据，请先执行 <code>python manage.py sync_cmdb</code></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

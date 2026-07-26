@@ -1,0 +1,125 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--accent:#0969da;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;--fail:#cf222e;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1000px;margin:0 auto;padding:26px 16px;}
+.tb{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.tb table{margin:0;}
+.tb thead th{background:#f6f8fa;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#57606a;border-bottom:2px solid var(--border);}
+.tb tbody tr:hover{background:#f6fbff;}
+.xa{border:1px solid var(--border);border-radius:4px;padding:2px 10px;font-size:.75rem;color:#57606a;text-decoration:none;background:transparent;margin-right:3px;}
+.xa:hover{background:#f6f8fa;}
+.xr{border:1px solid #ffcdd2;border-radius:4px;padding:2px 10px;font-size:.75rem;color:#cf222e;text-decoration:none;background:transparent;}
+.xr:hover{background:#fff0f0;}
+.bk{padding:2px 7px;border-radius:4px;font-size:.73rem;background:#f0f6ff;color:#0550ae;margin:1px;display:inline-block;}
+.modal-bd{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;}
+.modal-bd.show{display:flex;}
+.mb{background:var(--card);border-radius:10px;padding:24px 28px;width:560px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+.mb h5{margin:0 0 16px;font-weight:700;}
+.fr{margin-bottom:12px;}
+.fr label{display:block;font-size:.78rem;font-weight:600;color:#57606a;margin-bottom:3px;}
+.fr input,.fr select{width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:.86rem;box-sizing:border-box;}
+.items-box{border:1px solid var(--border);border-radius:6px;padding:8px;max-height:220px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:4px 12px;}
+.items-box label{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:.83rem;white-space:nowrap;background:#f6f8fa;border:1px solid var(--border);margin:0;}
+.items-box label:hover{background:#e8f0fe;border-color:#0969da;}
+.mbt{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+.bs{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 22px;font-size:.88rem;cursor:pointer;}
+.bc{background:transparent;border:1px solid var(--border);border-radius:6px;padding:7px 18px;font-size:.88rem;cursor:pointer;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h4 style="margin:0;font-weight:700;">设备分组管理</h4>
+    <button class="btn btn-primary btn-sm" onclick="openAdd()">+ 新增分组</button>
+  </div>
+  <div class="tb">
+    <table class="table table-hover">
+      <thead><tr><th>分组名称</th><th>描述</th><th>绑定巡检项</th><th>设备数</th><th>操作</th></tr></thead>
+      <tbody>
+      {% for g in groups %}
+      <tr>
+        <td><strong>{{ g.name }}</strong></td>
+        <td style="color:#57606a;font-size:.85rem;">{{ g.description|default:"-" }}</td>
+        <td>{% for ci in g.check_items.all %}<span class="bk">{{ ci.name }}</span>{% empty %}<span style="color:#8c959f;font-size:.82rem;">未绑定</span>{% endfor %}</td>
+        <td>{{ g.newdevice_set.count }}</td>
+        <td>
+          <a href="#" class="xa" onclick="openEdit({{ g.id }}, '{{ g.name|escapejs }}', '{{ g.description|escapejs }}', [{% for ci in g.check_items.all %}{{ ci.id }},{% endfor %}])">编辑</a>
+          <a href="/new/group/delete/?uid={{ g.id }}" class="xr" onclick="return confirm('确认删除分组？')">删除</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;color:#8c959f;padding:32px;">暂无分组，请新增</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="modal-bd" id="modal">
+  <div class="mb">
+    <h5 id="mt">新增分组</h5>
+    <div class="fr"><label>分组名称 *</label><input id="f-name" placeholder="核心层"></div>
+    <div class="fr"><label>描述</label><input id="f-desc" placeholder="核心交换机分组"></div>
+    <div class="fr">
+      <label>绑定巡检项（可多选）</label>
+      <div class="items-box" id="items-box">
+        {% for ci in all_items %}
+        <label><input type="checkbox" value="{{ ci.id }}" class="ci-ck"> {{ ci.name }} <code style="font-size:.73rem;color:#57606a;">{{ ci.command }}</code></label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="mbt">
+      <button class="bc" onclick="closeM()">取消</button>
+      <button class="bs" onclick="doSave()">保存</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+var _eid = null;
+function openAdd() {
+  _eid = null;
+  document.getElementById('mt').textContent = '新增分组';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-desc').value = '';
+  document.querySelectorAll('.ci-ck').forEach(function(c){ c.checked = false; });
+  document.getElementById('modal').classList.add('show');
+}
+function openEdit(id, name, desc, itemIds) {
+  _eid = id;
+  document.getElementById('mt').textContent = '编辑分组 — ' + name;
+  document.getElementById('f-name').value = name;
+  document.getElementById('f-desc').value = desc;
+  document.querySelectorAll('.ci-ck').forEach(function(c){
+    c.checked = itemIds.indexOf(parseInt(c.value)) >= 0;
+  });
+  document.getElementById('modal').classList.add('show');
+}
+function closeM() { document.getElementById('modal').classList.remove('show'); }
+function gck(n) { var v = document.cookie.match('(^|;) ?' + n + '=([^;]*)(;|$)'); return v ? v[2] : null; }
+function doSave() {
+  var fd = new FormData();
+  fd.append('name', document.getElementById('f-name').value);
+  fd.append('description', document.getElementById('f-desc').value);
+  // 始终传递 check_items 字段（即使为空也传，让后端知道需要更新）
+  document.querySelectorAll('.ci-ck').forEach(function(c){
+    if (c.checked) fd.append('check_items', c.value);
+  });
+  // 未选中时传一个空值占位，确保后端收到 check_items 字段
+  if (!document.querySelector('.ci-ck:checked')) {
+    fd.append('check_items', '');
+  }
+  var url = _eid ? '/new/group/edit/?uid=' + _eid : '/new/group/add/';
+  fetch(url, { method: 'POST', body: fd, headers: { 'X-CSRFToken': gck('csrftoken') } })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.status) { closeM(); location.reload(); }
+      else { alert('保存失败：' + res.error); }
+    });
+}
+document.getElementById('modal').addEventListener('click', function(e){ if(e.target===this) closeM(); });
+</script>
+{% endblock %}

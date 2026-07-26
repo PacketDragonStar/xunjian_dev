@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--accent:#0F6E56;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;--ok:#1a7f37;--fail:#cf222e;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1280px;margin:0 auto;padding:26px 16px;}
+.bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.bar h4{margin:0;font-weight:700;}
+.cnt{color:#57606a;font-size:.8rem;margin-left:8px;font-weight:400;}
+.filt{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.filt select,.filt input{height:32px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font-size:.85rem;background:#fff;}
+.filt input{width:230px;}
+.tb{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.tb table{margin:0;font-size:.85rem;width:100%;}
+.tb thead th{background:#f6f8fa;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#57606a;border-bottom:2px solid var(--border);white-space:nowrap;padding:10px 12px;text-align:left;}
+.tb tbody td{padding:9px 12px;border-bottom:1px solid #eef1f4;white-space:nowrap;}
+.tb tbody tr:hover{background:#f6fbff;}
+.bk{padding:2px 9px;border-radius:20px;font-size:.73rem;font-weight:600;white-space:nowrap;}
+.bk-g{background:#dafbe1;color:#1a7f37;}.bk-r{background:#ffebe9;color:#cf222e;}
+.bk-o{background:#fff1e5;color:#bc4c00;}
+.bk-gray{background:#f3f4f6;color:#57606a;}
+.empty{padding:48px;text-align:center;color:#8c959f;font-size:.9rem;}
+code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:.78rem;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <div class="bar">
+    <h4>CMDB 设备台账<span class="cnt">共 {{ queryset|length }} 台</span></h4>
+    <form class="filt" method="get">
+      <select name="site" onchange="this.form.submit()">
+        <option value="">全部站点</option>
+        {% for s in sites %}<option value="{{ s }}" {% if s == site %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <select name="status" onchange="this.form.submit()">
+        <option value="">全部状态</option>
+        <option value="ok" {% if status == 'ok' %}selected{% endif %}>正常</option>
+        <option value="warn" {% if status == 'warn' %}selected{% endif %}>告警</option>
+      </select>
+      <input name="q" value="{{ q }}" placeholder="设备名 / 型号 / IP / 序列号...">
+      <button class="btn btn-primary btn-sm" type="submit">搜索</button>
+    </form>
+  </div>
+  <div class="tb">
+    <table>
+      <thead><tr>
+        <th>设备名</th><th>站点</th><th>型号</th><th>软件版本</th><th>序列号</th>
+        <th>管理IP</th><th>角色</th><th>CPU(5s)</th><th>内存空闲</th><th>运行天数</th><th>最近同步</th><th>状态</th>
+      </tr></thead>
+      <tbody>
+      {% for d in queryset %}
+      <tr>
+        <td><strong>{{ d.name }}</strong></td>
+        <td><span class="bk bk-gray">{{ d.site }}</span></td>
+        <td>{{ d.model }}</td>
+        <td>{{ d.os_version }}</td>
+        <td><code>{{ d.serial }}</code></td>
+        <td>{{ d.mgmt_ip }}</td>
+        <td>{{ d.role }}</td>
+        <td>{% if d.cpu_5s != None %}{% if d.cpu_5s >= 80 %}<span class="bk bk-r">{{ d.cpu_5s }}%</span>{% else %}{{ d.cpu_5s }}%{% endif %}{% else %}<span class="bk bk-gray">—</span>{% endif %}</td>
+        <td>{% if d.mem_free_ratio != None %}{% if d.mem_free_ratio < 20 %}<span class="bk bk-r">{{ d.mem_free_ratio }}%</span>{% else %}{{ d.mem_free_ratio }}%{% endif %}{% else %}<span class="bk bk-gray">—</span>{% endif %}</td>
+        <td>{% if d.uptime_days %}{{ d.uptime_days }}{% else %}—{% endif %}</td>
+        <td>{% if d.last_sync %}{{ d.last_sync|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
+        <td>{% if d.is_warn %}<span class="bk bk-r">告警</span>{% else %}<span class="bk bk-g">正常</span>{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="12"><div class="empty">暂无数据，请先执行 <code>python manage.py sync_cmdb</code> 生成 CMDB 台账</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

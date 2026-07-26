@@ -1,0 +1,324 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--ok:#1a7f37;--warn:#9a6700;--fail:#cf222e;--accent:#0F6E56;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1080px;margin:0 auto;padding:26px 16px;}
+.sr{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px;}
+.sc{flex:1;min-width:130px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px 18px;text-align:center;}
+.sc .n{font-size:2rem;font-weight:700;line-height:1;}
+.sc .l{font-size:.75rem;color:#57606a;margin-top:4px;}
+.sc.ok .n{color:var(--ok);} .sc.wn .n{color:var(--warn);} .sc.fl .n{color:var(--fail);} .sc.tt .n{color:var(--accent);}
+.rw{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.rw table{margin:0;}
+.rw thead th{background:#f6f8fa;font-size:.77rem;text-transform:uppercase;letter-spacing:.05em;color:#57606a;}
+.bk-ok{background:#dafbe1;color:#1a7f37;padding:2px 9px;border-radius:20px;font-size:.77rem;font-weight:600;}
+.bk-wn{background:#fff8c5;color:#9a6700;padding:2px 9px;border-radius:20px;font-size:.77rem;font-weight:600;}
+.bk-fl{background:#ffebe9;color:#cf222e;padding:2px 9px;border-radius:20px;font-size:.77rem;font-weight:600;}
+#pw{display:none;margin-bottom:18px;}
+#pb{height:5px;background:#e0e7ef;border-radius:3px;overflow:hidden;}
+#pbi{height:5px;background:var(--accent);border-radius:3px;width:0;transition:width .4s;}
+#lb{background:#0d1117;color:#c9d1d9;font-family:Consolas,monospace;font-size:.8rem;border-radius:6px;padding:12px 14px;min-height:60px;max-height:220px;overflow-y:auto;display:none;margin-bottom:18px;border:1px solid #30363d;}
+.btnr{background:var(--accent);color:#fff;border:none;padding:8px 26px;border-radius:6px;font-size:.93rem;font-weight:600;cursor:pointer;}
+.btnr:hover{background:#0c5a48;} .btnr:disabled{background:#8c959f;cursor:not-allowed;}
+.dev-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;}
+.dev-modal.show{display:flex;}
+.dev-box{background:#fff;border-radius:10px;width:560px;max-width:96vw;max-height:86vh;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.2);}
+.dev-box h5{margin:0;padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;}
+.dev-list{padding:10px 14px;max-height:50vh;overflow:auto;}
+.dev-item{display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px dashed #eaeef2;font-size:.86rem;}
+.dev-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <nav aria-label="breadcrumb" style="margin-bottom:14px;">
+    <ol class="breadcrumb" style="background:transparent;padding:0;margin:0;">
+      <li class="breadcrumb-item"><a href="/new/history/">巡检历史</a></li>
+      <li class="breadcrumb-item active">执行巡检</li>
+    </ol>
+  </nav>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h4 style="margin:0;font-weight:700;">网络巡检 <small style="font-weight:400;color:#57606a;font-size:.83rem;">v2 引擎</small></h4>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+      <select id="sel-cs" class="form-control" style="width:170px;display:inline-block;">
+        <option value="">全部设备</option>
+        {% for cs in checksets %}<option value="{{ cs.id }}">{{ cs.name }}</option>{% endfor %}
+      </select>
+      <button type="button" class="btn btn-default" onclick="openDevPicker()">选择设备</button>
+      <span id="dev-picked-tip" style="font-size:.82rem;color:#57606a;">已选 0 台（默认全选）</span>
+      <button class="btnr" id="btn-run" onclick="doRun()">&#9654; 开始巡检</button>
+    </div>
+  </div>
+  <div id="pw">
+    <div style="display:flex;justify-content:space-between;font-size:.78rem;color:#57606a;margin-bottom:3px;">
+      <span id="pl">正在连接设备...</span><span id="pt"></span>
+    </div>
+    <div id="pb"><div id="pbi"></div></div>
+  </div>
+  <div id="lb"></div>
+  <div class="sr" id="sr" style="display:none;">
+    <div class="sc tt"><div class="n" id="st">-</div><div class="l">巡检设备</div></div>
+    <div class="sc ok"><div class="n" id="sok">-</div><div class="l">全部正常</div></div>
+    <div class="sc wn"><div class="n" id="swn">-</div><div class="l">发现异常</div></div>
+    <div class="sc fl"><div class="n" id="sfl">-</div><div class="l">连接失败</div></div>
+    <div class="sc tt"><div class="n" id="sc">-</div><div class="l">执行巡检项</div></div>
+  </div>
+  <div id="rs" style="display:none;">
+    <div style="font-size:.95rem;font-weight:700;margin-bottom:10px;">设备明细</div>
+    <div class="rw">
+      <table class="table table-hover" style="margin:0;">
+        <thead><tr><th>设备名</th><th>IP</th><th>状态</th><th>正常/总数</th><th>异常项</th><th>操作</th></tr></thead>
+        <tbody id="rt"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;">
+      <a class="btn btn-default" href="/new/history/">查看历史记录</a>
+      <a id="bd" class="btn btn-primary" href="#" style="display:none;">查看本次异常详情</a>
+    </div>
+  </div>
+  <div id="gd" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px 22px;">
+    <div style="font-size:.95rem;font-weight:700;margin-bottom:10px;">使用说明</div>
+    <ul style="color:#57606a;font-size:.88rem;line-height:1.9;">
+      <li>首次使用请先执行一次巡检，完成后在「历史记录」中将其「设为基线」</li>
+      <li>后续每次巡检自动与基线对比，发现差异时标记为 <span class="bk-wn">异常</span></li>
+      <li>可通过顶部「检查集」下拉框缩小巡检范围，也可选择全部设备</li>
+      <li>异常确认后总状态自动变为 <span class="bk-ok">正常</span></li>
+    </ul>
+    <div style="margin-top:12px;font-size:.83rem;color:#8c959f;">
+      当前基线：
+      {% if baseline %}<strong style="color:var(--ok);">{{ baseline.time }}</strong>（操作人：{{ baseline.operator }}）
+      {% else %}<strong style="color:var(--fail);">未设置基线</strong> — 请执行一次巡检后在历史记录中设置{% endif %}
+    </div>
+  </div>
+</div>
+
+<div id="dev-modal" class="dev-modal" onclick="if(event.target===this)closeDevPicker()">
+  <div class="dev-box">
+    <h5>选择要巡检的设备</h5>
+    <div style="padding:10px 14px 0;display:flex;gap:8px;align-items:center;">
+      <button type="button" class="btn btn-default btn-xs" onclick="pickAllDevs(true)">全选</button>
+      <button type="button" class="btn btn-default btn-xs" onclick="pickAllDevs(false)">全不选</button>
+    </div>
+    <div class="dev-list" id="dev-list">
+      {% for dev in devices %}
+      <label class="dev-item">
+        <input type="checkbox" class="dev-cb" value="{{ dev.id }}">
+        <strong>{{ dev.name }}</strong>
+        <span style="color:#57606a;">{{ dev.ip }}</span>
+        {% if dev.group %}<span style="margin-left:auto;color:#8c959f;">{{ dev.group.name }}</span>{% endif %}
+      </label>
+      {% endfor %}
+    </div>
+    <div class="dev-foot">
+      <span id="dev-picked-count" style="font-size:.82rem;color:#57606a;">已选 0 台</span>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn btn-default" onclick="closeDevPicker()">取消</button>
+        <button type="button" class="btn btn-primary" onclick="applyDevPicker()">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+var _t = '';
+var _selectedDeviceIds = [];
+
+function getPickedIdsFromModal() {
+  var ids = [];
+  document.querySelectorAll('.dev-cb:checked').forEach(function(cb) {
+    ids.push(cb.value);
+  });
+  return ids;
+}
+
+function refreshPickedTip() {
+  var n = _selectedDeviceIds.length;
+  var tip = document.getElementById('dev-picked-tip');
+  if (!tip) return;
+  tip.textContent = n > 0 ? ('已选 ' + n + ' 台') : '已选 0 台（默认全选）';
+}
+
+function openDevPicker() {
+  document.getElementById('dev-modal').classList.add('show');
+  var picked = new Set(_selectedDeviceIds);
+  document.querySelectorAll('.dev-cb').forEach(function(cb) {
+    cb.checked = picked.has(cb.value);
+  });
+  updateModalPickedCount();
+}
+
+function closeDevPicker() {
+  document.getElementById('dev-modal').classList.remove('show');
+}
+
+function pickAllDevs(flag) {
+  document.querySelectorAll('.dev-cb').forEach(function(cb) {
+    cb.checked = !!flag;
+  });
+  updateModalPickedCount();
+}
+
+function updateModalPickedCount() {
+  var n = getPickedIdsFromModal().length;
+  var box = document.getElementById('dev-picked-count');
+  if (box) box.textContent = '已选 ' + n + ' 台';
+}
+
+function applyDevPicker() {
+  _selectedDeviceIds = getPickedIdsFromModal();
+  refreshPickedTip();
+  closeDevPicker();
+}
+
+function aL(m, c) {
+  var b = document.getElementById('lb');
+  b.style.display = 'block';
+  var d = document.createElement('div');
+  if (c) d.style.color = c;
+  d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + m;
+  b.appendChild(d);
+  b.scrollTop = b.scrollHeight;
+}
+function sP(p, l) {
+  document.getElementById('pw').style.display = 'block';
+  document.getElementById('pbi').style.width = p + '%';
+  if (l) document.getElementById('pl').textContent = l;
+}
+function sb(s) {
+  if (s === 'ok')      return '<span class="bk-ok">正常</span>';
+  if (s === 'anomaly') return '<span class="bk-wn">异常</span>';
+  if (s === 'failed')  return '<span class="bk-fl">失败</span>';
+  return '<span class="bk-fl">' + s + '</span>';
+}
+function gck(n) {
+  var v = document.cookie.match('(^|;) ?' + n + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+function doRun() {
+  var btn = document.getElementById('btn-run');
+  var cs  = document.getElementById('sel-cs').value;
+  var pickedCount = _selectedDeviceIds.length;
+  btn.disabled = true;
+  btn.textContent = '巡检中...';
+  document.getElementById('gd').style.display = 'none';
+  document.getElementById('sr').style.display = 'none';
+  document.getElementById('rs').style.display = 'none';
+  document.getElementById('lb').innerHTML = '';
+  if (pickedCount > 0) aL('本次仅巡检已选择设备：' + pickedCount + ' 台', '#58a6ff');
+  sP(6, '巡检任务已提交，后台执行中...');
+  aL('任务已提交，正在后台执行（不再阻塞页面）...');
+  var fd = new FormData();
+  if (cs) fd.append('checkset_id', cs);
+  _selectedDeviceIds.forEach(function(id){ fd.append('device_ids', id); });
+  fetch('/new/xunjian/run/', {
+    method: 'POST', body: fd,
+    headers: {'X-CSRFToken': gck('csrftoken')}
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res) {
+    if (!res.status) {
+      aL('提交失败：' + res.error, '#f85149');
+      btn.disabled = false; btn.textContent = '▶ 开始巡检';
+      return;
+    }
+    aL('已创建任务 #' + res.task_id + '，开始实时跟踪进度...');
+    pollTask(res.task_id);
+  })
+  .catch(function(e) {
+    aL('网络错误：' + e, '#f85149');
+    btn.disabled = false; btn.textContent = '▶ 开始巡检';
+  });
+}
+
+var _pollIv = null;
+function pollTask(taskId) {
+  function tick() {
+    fetch('/task/' + taskId + '/detail/')
+      .then(function(r){ return r.json(); })
+      .then(function(res) {
+        if (!res.status) return;
+        var t = res.task;
+        var pct = t.pct || 0;
+        sP(pct, '已处理 ' + t.done + ' / ' + t.device_count + ' 台');
+        document.getElementById('st').textContent  = t.device_count;
+        document.getElementById('sok').textContent = t.ok_devices;
+        document.getElementById('swn').textContent = t.anomaly_devices;
+        document.getElementById('sfl').textContent = t.failed_devices;
+        document.getElementById('sc').textContent  = (t.ok_devices + t.anomaly_devices + t.failed_devices);
+        if (t.status === 'done' || t.status === 'partial' || t.status === 'failed') {
+          if (_pollIv) clearInterval(_pollIv);
+          onTaskDone(t);
+        }
+      })
+      .catch(function(e){ aL('轮询失败：' + e, '#f85149'); });
+  }
+  tick();
+  _pollIv = setInterval(tick, 1500);
+}
+
+function onTaskDone(t) {
+  if (t.status === 'failed') {
+    aL('任务执行失败：' + (t.error || '未知'), '#f85149');
+    btn_reset();
+    return;
+  }
+  aL('巡检完成：共 ' + t.device_count + ' 台，正常 ' + t.ok_devices + ' 台，异常 ' + t.anomaly_devices + ' 台，失败 ' + t.failed_devices + ' 台', '#3fb950');
+  document.getElementById('sr').style.display = 'flex';
+  document.getElementById('rs').style.display = 'block';
+  document.getElementById('sr').scrollIntoView({behavior:'smooth'});
+  // 填充设备明细表
+  renderDeviceTable(t);
+  // 跳转到详情页（如果有巡检时间）
+  var lk = document.getElementById('bd');
+  if (t.xunjian_time) {
+    lk.href = '/new/history/detail/?time=' + encodeURIComponent(t.xunjian_time);
+    lk.style.display = 'inline-block';
+    aL('点击「查看本次异常详情」或等待 3 秒自动跳转到结果详情页...', '#58a6ff');
+    setTimeout(function(){
+      window.location.href = '/new/history/detail/?time=' + encodeURIComponent(t.xunjian_time);
+    }, 3000);
+  } else {
+    // 如果没有巡检时间（异步回填延迟），等待后再刷新
+    aL('等待巡检结果写入...重新查询中。', '#e3b341');
+    setTimeout(function(){ location.reload(); }, 2000);
+  }
+  btn_reset();
+}
+function renderDeviceTable(t) {
+  var tb = document.getElementById('rt');
+  if (!tb) return;
+  if (!t.done) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#8c959f;">暂无设备数据</td></tr>'; return; }
+  // 从 task_detail_json 获取完整设备列表（逐设备）
+  fetch('/task/' + t.id + '/detail/')
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    if (!res.status || !res.task) return;
+    var data = res.task;
+    // 用概览数据展示设备汇总，无逐设备明细时显示跳转链接
+    var html = '<tr><td colspan="6"><div style="padding:8px;text-align:center;font-size:.88rem;">';
+    html += '<span class="bk-ok">' + (data.ok_devices||0) + ' 台正常</span> ';
+    if (data.anomaly_devices > 0) html += '<span class="bk-wn">' + data.anomaly_devices + ' 台异常</span> ';
+    if (data.failed_devices > 0) html += '<span class="bk-fl">' + data.failed_devices + ' 台失败</span> ';
+    if (data.xunjian_time) {
+      html += '&nbsp;&nbsp;<a href="/new/history/detail/?time=' + encodeURIComponent(data.xunjian_time) + '" class="btn btn-primary btn-xs">查看完整详情（含原始命令回显）</a>';
+    }
+    html += '</div></td></tr>';
+    tb.innerHTML = html;
+  })
+  .catch(function() {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#8c959f;">加载设备详情失败，请刷新重试</td></tr>';
+  });
+}
+function btn_reset(){
+  var btn = document.getElementById('btn-run');
+  btn.disabled = false; btn.textContent = '▶ 开始巡检';
+}
+document.querySelectorAll('.dev-cb').forEach(function(cb){
+  cb.addEventListener('change', updateModalPickedCount);
+});
+refreshPickedTip();
+</script>
+{% endblock %}

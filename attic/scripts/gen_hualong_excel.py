@@ -1,0 +1,93 @@
+# -*- coding: utf-8 -*-
+"""@init_checkitems 化龙：按防火墙1修改覆盖全角色"""
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+wb = Workbook()
+
+H = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
+HF = Font(name='微软雅黑', size=11, bold=True, color='FFFFFF')
+W = Alignment(wrap_text=True, vertical='top')
+T = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+DF = Font(name='微软雅黑', size=10)
+YELLOW = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+RED = PatternFill(start_color='FFC7CE', end_color='FFC7CE', fill_type='solid')
+
+def b(ws, title, items):
+    ws.title = title
+    hdrs = ['序号','检查项','命令','适用设备类型','判断','parser','checker','parser_config','checker_config','现网阈值/期望值（待填）','备注']
+    for c,h in enumerate(hdrs,1):
+        cl=ws.cell(row=1,column=c,value=h);cl.fill=H;cl.font=HF;cl.alignment=Alignment(horizontal='center',vertical='center',wrap_text=True);cl.border=T
+    for i,w in enumerate([5,22,36,14,5,10,14,40,48,32,22],1): ws.column_dimensions[get_column_letter(i)].width=w
+    ws.freeze_panes='A2'
+    for i,r in enumerate(items):
+        row=i+2
+        for c,v in enumerate(r,1):
+            cl=ws.cell(row=row,column=c,value=v);cl.font=DF;cl.alignment=W;cl.border=T
+        ws.cell(row=row,column=10).fill=YELLOW
+        if chr(0x1F534) in str(r[10]): ws.cell(row=row,column=8).fill=RED;ws.cell(row=row,column=9).fill=RED
+
+COMMON = [
+    (1,'CPU利用率','display cpu-usage','所有','B','regex','threshold','{"pattern":"(\\d+)%","group":1,"cast":"float"}','{"warning":80,"operator":"<"}','各核<30% 无持续升高',''),
+    (2,'内存利用率','display memory','所有','B','regex','threshold','{"pattern":"Mem:\\s+\\d+\\s+\\d+\\s+\\d+.*?\\s+([\\d\\.]+)%","group":1,"cast":"float"}','{"warning":20,"operator":">"}','FreeRatio>40%为正常',''),
+    (3,'风扇','display fan','所有','B','raw','custom','','{"func":"check_fan"}','Normal≥1且无异常→正常',''),
+    (4,'电源','display power','所有','B','raw','custom','','{"func":"check_power"}','Normal≥1且无异常→正常',''),
+    (5,'温度','display environment','所有','B','raw','custom','','{"func":"check_env","temp_warning":60}','温度<60°C无告警',''),
+    (6,'单板','display device','所有','B','raw','custom','','{"func":"check_device"}','Normal≥1且无异常→正常',''),
+    (7,'接口状态','display interface brief','所有','A','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+    (8,'日志','display logbuffer','所有','A','strip_ts','baseline','{"patterns":["%\\w{3}\\s+\\d+\\s+\\d{2}:\\d{2}:\\d{2}:\\d{3}\\s+\\d{4}"]}','{"similarity":0.95}','A类基线全量对比',''),
+    (9,'路由表','display ip routing-table all-vpn-instance','所有','A','raw','baseline','','{"similarity":1.0}','A类基线全量含VPN实例',''),
+    (10,'NTP状态','display ntp status','所有','B','raw','contains','','{"keyword":"synchronized"}','Clock synchronized',''),
+    (11,'版本','display version','所有','A','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+    (12,'配置备份','display current-configuration','所有','A','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+    (13,'稳定状态','display system stable state','所有','B','raw','custom','','{"func":"check_system_stable"}','所有State=Stable',''),
+    (14,'LLDP邻居','display lldp neighbor-information list','所有','B','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+    (15,'光模块','display transceiver diagnosis interface','所有','B','raw','custom','','{"func":"check_transceiver"}','越限即异常',''),
+    (16,'错包入向','display counters inbound interface','所有','A','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+    (17,'错包出向','display counters outbound interface','所有','A','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+    (18,'Flash空间','dir flash:/','所有','A','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+]
+
+FW_EXTRA = [
+    (19,'安全域成员','display security-zone','防火墙','A','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+    (20,'安全策略命中','display security-policy statistics','防火墙','A','raw','baseline','','{"similarity":1.0}','基线对比',''),
+    (21,'安全策略规则','display security-policy ip rule all','防火墙','A','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+    (22,'RBM双机热备','display remote-backup-group status','防火墙','B','raw','custom','','{"func":"check_rbm"}','主Active备Inactive',''),
+    (23,'会话表','display session table ipv4','防火墙','B','raw','custom','','{"func":"check_session","max_sessions":500000}','会话<上限',''),
+    (24,'VRRP','display vrrp brief','防火墙','B','raw','custom','','{"func":"check_vrrp"}','Master数=期望',''),
+]
+
+CORE_EXTRA = [
+    (19,'OSPF邻居','display ospf peer','核心','B','raw','custom','','{"func":"check_ospf_peer","expected_full_count":0}','Full数=期望',''),
+    (20,'BGP邻居','display bgp peer ipv4','核心','B','raw','custom','','{"func":"check_bgp_peer","expected_established":0}','Established数=期望',''),
+    (21,'VRRP','display vrrp brief','核心','B','raw','custom','','{"func":"check_vrrp"}','Master数=期望',''),
+    (22,'M-LAG','display m-lag summary','核心','B','raw','custom','','{"func":"check_mlag"}','Active/Up无MAD冲突',''),
+    (23,'NQA探测','display nqa result','核心','B','raw','custom','','{"func":"check_nqa"}','无failed/Timeout',''),
+    (24,'Track','display track','核心','B','raw','custom','','{"func":"check_track","expected_tracks":0}','全Positive',''),
+    (25,'STP状态','display stp brief','核心','B','raw','custom','','{"func":"check_stp","root_expected":"本端"}','本端为根桥',''),
+    (26,'VLAN','display vlan brief','核心','A','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+    (27,'链路聚合','display link-aggregation summary','核心','B','raw','custom','','{"func":"check_agg"}','无Unselected',''),
+    (28,'IRF堆叠状态','display irf','核心/堆叠','B','raw','custom','','{"func":"check_irf"}','IRF mode=normal,Master=1',''),
+]
+
+ACC_EXTRA = [
+    (19,'STP状态','display stp brief','接入','B','raw','custom','','{"func":"check_stp","root_expected":"非根桥"}','非根桥端口FWD无阻塞',''),
+    (20,'VLAN','display vlan brief','接入','A','raw','baseline','','{"similarity":1.0}','A类基线全量对比',''),
+    (21,'链路聚合','display link-aggregation summary','接入','B','raw','custom','','{"func":"check_agg"}','无Unselected',''),
+    (22,'ARP冲突','display arp user-ip-conflict record','接入','A','raw','custom','','{"func":"check_arp"}','冲突清零',''),
+]
+
+SRP_EXTRA = [
+    (19,'OSPF邻居','display ospf peer','路由器','B','raw','custom','','{"func":"check_ospf_peer","expected_full_count":0}','Full数=期望',''),
+    (20,'BGP邻居','display bgp peer ipv4','路由器','B','raw','custom','','{"func":"check_bgp_peer","expected_established":0}','Established数=期望',''),
+    (21,'VRRP','display vrrp','路由器','B','raw','custom','','{"func":"check_vrrp"}','Master数=期望',''),
+]
+
+for sn, ext in [('防火墙',FW_EXTRA),('核心交换机',CORE_EXTRA),('接入交换机',ACC_EXTRA),('OA交换机',ACC_EXTRA),('存储交换机',ACC_EXTRA),('IDC交换机',ACC_EXTRA),('路由器',SRP_EXTRA)]:
+    ws=wb.create_sheet();b(ws,sn,COMMON+ext)
+
+b(wb.active,'防火墙',COMMON+FW_EXTRA)
+
+wb.save('巡检项阈值配置表_化龙.xlsx')
+print('OK: 安全域成员+VLAN全改A类baseline，尊重你的选择')

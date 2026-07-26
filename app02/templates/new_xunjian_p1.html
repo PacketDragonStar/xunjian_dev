@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--ok:#1a7f37;--warn:#9a6700;--fail:#cf222e;--accent:#0969da;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1080px;margin:0 auto;padding:26px 16px;}
+.sr{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px;}
+.sc{flex:1;min-width:130px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px 18px;text-align:center;}
+.sc .n{font-size:2rem;font-weight:700;line-height:1;}
+.sc .l{font-size:.75rem;color:#57606a;margin-top:4px;}
+.sc.ok .n{color:var(--ok);} .sc.wn .n{color:var(--warn);} .sc.fl .n{color:var(--fail);} .sc.tt .n{color:var(--accent);}
+.rw{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.rw table{margin:0;}
+.rw thead th{background:#f6f8fa;font-size:.77rem;text-transform:uppercase;letter-spacing:.05em;color:#57606a;}
+.bk-ok{background:#dafbe1;color:#1a7f37;padding:2px 9px;border-radius:20px;font-size:.77rem;font-weight:600;}
+.bk-wn{background:#fff8c5;color:#9a6700;padding:2px 9px;border-radius:20px;font-size:.77rem;font-weight:600;}
+.bk-fl{background:#ffebe9;color:#cf222e;padding:2px 9px;border-radius:20px;font-size:.77rem;font-weight:600;}
+#pw{display:none;margin-bottom:18px;}
+#pb{height:5px;background:#e0e7ef;border-radius:3px;overflow:hidden;}
+#pbi{height:5px;background:var(--accent);border-radius:3px;width:0;transition:width .4s;}
+#lb{background:#0d1117;color:#c9d1d9;font-family:Consolas,monospace;font-size:.8rem;border-radius:6px;padding:12px 14px;min-height:60px;max-height:220px;overflow-y:auto;display:none;margin-bottom:18px;border:1px solid #30363d;}
+.btnr{background:var(--accent);color:#fff;border:none;padding:8px 26px;border-radius:6px;font-size:.93rem;font-weight:600;cursor:pointer;}
+.btnr:hover{background:#0550ae;} .btnr:disabled{background:#8c959f;cursor:not-allowed;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <nav aria-label="breadcrumb" style="margin-bottom:14px;">
+    <ol class="breadcrumb" style="background:transparent;padding:0;margin:0;">
+      <li class="breadcrumb-item"><a href="/new/history/">巡检历史</a></li>
+      <li class="breadcrumb-item active">执行巡检</li>
+    </ol>
+  </nav>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h4 style="margin:0;font-weight:700;">网络巡检 <small style="font-weight:400;color:#57606a;font-size:.83rem;">v2 引擎</small></h4>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <select id="sel-cs" class="form-control" style="width:170px;display:inline-block;">
+        <option value="">全部设备</option>
+        {% for cs in checksets %}<option value="{{ cs.id }}">{{ cs.name }}</option>{% endfor %}
+      </select>
+      <button class="btnr" id="btn-run" onclick="doRun()">&#9654; 开始巡检</button>
+    </div>
+  </div>
+  <div id="pw">
+    <div style="display:flex;justify-content:space-between;font-size:.78rem;color:#57606a;margin-bottom:3px;">
+      <span id="pl">正在连接设备...</span><span id="pt"></span>
+    </div>
+    <div id="pb"><div id="pbi"></div></div>
+  </div>
+  <div id="lb"></div>
+  <div class="sr" id="sr" style="display:none;">
+    <div class="sc tt"><div class="n" id="st">-</div><div class="l">巡检设备</div></div>
+    <div class="sc ok"><div class="n" id="sok">-</div><div class="l">全部正常</div></div>
+    <div class="sc wn"><div class="n" id="swn">-</div><div class="l">发现异常</div></div>
+    <div class="sc fl"><div class="n" id="sfl">-</div><div class="l">连接失败</div></div>
+    <div class="sc tt"><div class="n" id="sc">-</div><div class="l">执行巡检项</div></div>
+  </div>
+  <div id="rs" style="display:none;">
+    <div style="font-size:.95rem;font-weight:700;margin-bottom:10px;">设备明细</div>
+    <div class="rw">
+      <table class="table table-hover" style="margin:0;">
+        <thead><tr><th>设备名</th><th>IP</th><th>状态</th><th>正常/总数</th><th>异常项</th><th>操作</th></tr></thead>
+        <tbody id="rt"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;">
+      <a class="btn btn-default" href="/new/history/">查看历史记录</a>
+      <a id="bd" class="btn btn-primary" href="#" style="display:none;">查看本次异常详情</a>
+    </div>
+  </div>
+  <div id="gd" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px 22px;">
+    <div style="font-size:.95rem;font-weight:700;margin-bottom:10px;">使用说明</div>
+    <ul style="color:#57606a;font-size:.88rem;line-height:1.9;">
+      <li>首次使用请先执行一次巡检，完成后在「历史记录」中将其「设为基线」</li>
+      <li>后续每次巡检自动与基线对比，发现差异时标记为 <span class="bk-wn">异常</span></li>
+      <li>可通过顶部「检查集」下拉框缩小巡检范围，也可选择全部设备</li>
+      <li>异常确认后总状态自动变为 <span class="bk-ok">正常</span></li>
+    </ul>
+    <div style="margin-top:12px;font-size:.83rem;color:#8c959f;">
+      当前基线：
+      {% if baseline %}<strong style="color:var(--ok);">{{ baseline.time }}</strong>（操作人：{{ baseline.operator }}）
+      {% else %}<strong style="color:var(--fail);">未设置基线</strong> — 请执行一次巡检后在历史记录中设置{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

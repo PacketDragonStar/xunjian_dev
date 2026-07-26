@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--accent:#0F6E56;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1180px;margin:0 auto;padding:26px 16px;}
+.bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+h4{margin:0;font-weight:700;}
+.frm{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+select,button{font-size:.86rem;}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:18px;margin-bottom:18px;}
+.panel svg{width:100%;height:auto;display:block;}
+.muted{color:#8c959f;font-size:.82rem;}
+table{width:100%;border-collapse:collapse;margin-top:8px;}
+th,td{padding:6px 10px;border-bottom:1px solid #eef1f4;font-size:.82rem;text-align:left;}
+th{color:#57606a;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <div class="bar">
+    <h4>阶段 D · 历史趋势</h4>
+    <form class="frm" method="get" action="/new/trend/">
+      <select name="device" class="form-control" style="width:200px;" onchange="this.form.submit()">
+        <option value="">选择设备...</option>
+        {% for d in devices %}<option value="{{ d }}" {% if d == device %}selected{% endif %}>{{ d }}</option>{% endfor %}
+      </select>
+      <select name="metric" class="form-control" style="width:150px;" onchange="this.form.submit()">
+        {% for k,v in metrics.items %}<option value="{{ k }}" {% if k == metric %}selected{% endif %}>{{ v.label }}</option>{% endfor %}
+      </select>
+      <a href="/new/report/acceptance/export/" class="btn btn-primary btn-sm">导出验收报告(Excel)</a>
+    </form>
+  </div>
+
+  {% if device %}
+  <div class="panel">
+    {{ svg|safe }}
+  </div>
+  <div class="panel">
+    <div class="muted">最近 {{ series|length }} 个采样点</div>
+    <table>
+      <thead><tr><th>时间</th><th>数值</th></tr></thead>
+      <tbody>
+        {% for p in series %}
+        <tr><td>{{ p.t }}</td><td>{{ p.v }}</td></tr>
+        {% empty %}
+        <tr><td colspan="2" class="muted">暂无数据（请先积累多次巡检）</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="panel muted">请先在右上选择一台设备查看 CPU / 内存 / 温度 的历史趋势。趋势数据来自历次巡检的 CheckResult 采集。</div>
+  {% endif %}
+</div>
+{% endblock %}

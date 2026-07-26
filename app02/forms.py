@@ -1,16 +1,13 @@
-from django import forms
-from .models import MyModel
+# forms.py — 巡检系统表单（保留表单基础，MyModel 已随 v1 残余一起删除）
 
-class MyForm(forms.ModelForm):
-    class Meta:
-        model = MyModel
-        fields = ['my_checkbox_field']
-        labels = {
-            'my_checkbox_field': '选中我',  # 在这里设置标签文本
-        }
-        widgets = {
-            'my_checkbox_field': forms.CheckboxInput(attrs={
-                'class': 'my-checkbox-class',  # 设置CSS类
-                'style': 'margin: 10px;',     # 设置内联样式
-            })
-        }
+from django import forms
+
+
+class UploadFileForm(forms.Form):
+    file = forms.FileField(
+        label='Upload Excel File',
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.xls,.xlsx'
+        })
+    )

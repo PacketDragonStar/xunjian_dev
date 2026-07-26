@@ -1,0 +1,182 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--ok:#1a7f37;--warn:#9a6700;--fail:#cf222e;--accent:#0969da;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.page-wrap{max-width:1200px;margin:0 auto;padding:26px 16px;}
+.filter-bar{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:18px;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;}
+.filter-bar .fld{display:flex;flex-direction:column;gap:5px;}
+.filter-bar label{font-size:.76rem;color:#57606a;font-weight:600;}
+.filter-bar select{padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;min-width:180px;background:#fff;color:#1f2328;}
+.filter-bar .btn-go{padding:8px 22px;border:none;border-radius:6px;background:var(--accent);color:#fff;font-size:.84rem;font-weight:600;cursor:pointer;}
+.filter-bar .btn-go:hover{opacity:.9;}
+.meta-bar{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-size:.85rem;}
+.meta-bar .tag{color:#57606a;}
+.meta-bar code{background:#f6f8fa;padding:2px 7px;border-radius:4px;font-size:.82rem;}
+.diff-wrap{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:auto;}
+.diff-wrap table{width:100%;border-collapse:collapse;font-family:Consolas,monospace;font-size:.78rem;}
+.diff-wrap table td{padding:2px 8px;vertical-align:top;white-space:pre-wrap;word-break:break-all;border:none;}
+.diff-wrap table .diff_header{background:#f6f8fa;color:#57606a;text-align:center;}
+.diff-wrap table .diff_next{display:none;}
+.diff_add{background:#e6ffec;}
+.diff_chg{background:#fff8c5;}
+.diff_sub{background:#ffebe9;}
+.raw-wrap{background:#0d1117;color:#c9d1d9;border-radius:8px;padding:16px;font-family:Consolas,monospace;font-size:.8rem;max-height:600px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;border:1px solid #30363d;}
+.ext-tb{width:100%;border-collapse:collapse;font-size:.84rem;background:#fff;}
+.ext-tb td{border:1px solid var(--border);padding:6px 12px;}
+.ext-tb td:first-child{background:#f6f8fa;font-weight:600;color:#57606a;width:62%;font-family:Consolas,monospace;font-size:.78rem;}
+.ext-tb td:last-child{color:#0550ae;font-weight:600;text-align:right;font-family:Consolas,monospace;}
+.strip-on{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:#0550ae;background:#ddf4ff;border:1px solid #b6e3ff;padding:3px 10px;border-radius:20px;}
+.err-box{background:#ffebe9;border:1px solid #ffb3b0;border-radius:8px;padding:16px 20px;color:#cf222e;font-size:.88rem;}
+.hint-box{background:#ddf4ff;border:1px solid #b6e3ff;border-radius:8px;padding:18px 20px;color:#0550ae;font-size:.88rem;line-height:1.6;}
+.tab-btns{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border);}
+.tab-btn{padding:8px 20px;font-size:.85rem;cursor:pointer;border:none;background:transparent;color:#57606a;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+.tab-pane{display:none;padding-top:16px;}
+.tab-pane.active{display:block;}
+.miss-tag{display:inline-block;background:#fff8c5;color:#9a6700;padding:2px 9px;border-radius:20px;font-size:.74rem;font-weight:600;margin-left:6px;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <nav aria-label="breadcrumb" style="margin-bottom:14px;">
+    <ol class="breadcrumb" style="background:transparent;padding:0;margin:0;">
+      <li class="breadcrumb-item"><a href="/new/history/">巡检历史</a></li>
+      <li class="breadcrumb-item active">命令回显对比</li>
+    </ol>
+  </nav>
+
+  <!-- 筛选表单 -->
+  <form method="get" class="filter-bar">
+    <div class="fld">
+      <label>设备</label>
+      <select name="device">
+        <option value="">— 请选择 —</option>
+        {% for d in devices %}<option value="{{ d }}" {% if d == device %}selected{% endif %}>{{ d }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="fld">
+      <label>命令</label>
+      <select name="command">
+        <option value="">— 请选择 —</option>
+        {% for c in commands %}<option value="{{ c }}" {% if c == command %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="fld">
+      <label>基准（左）</label>
+      <select name="left_time">
+        {% for r in records %}<option value="{{ r.time }}" {% if r.time == left_time %}selected{% endif %}>{{ r.time }}{% if r.is_baseline %} ★基线{% endif %}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="fld">
+      <label>目标（右）</label>
+      <select name="right_time">
+        {% for r in records %}<option value="{{ r.time }}" {% if r.time == right_time %}selected{% endif %}>{{ r.time }}{% if r.is_baseline %} ★基线{% endif %}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="fld" style="flex-direction:row;align-items:center;gap:6px;padding-bottom:8px;">
+      <input type="checkbox" id="f-strip" name="strip" value="1" {% if strip_on %}checked{% endif %}>
+      <label for="f-strip" style="margin:0;">应用对比清洗</label>
+    </div>
+    <button type="submit" class="btn-go">对比</button>
+  </form>
+
+  {% if not show_result %}
+    <div class="hint-box">
+      <strong>命令回显对比</strong><br>
+      选择「设备 + 命令」，再选「基准（左）」与「目标（右）」两个巡检批次即可查看差异。<br>
+      默认基准为 <strong>基线</strong>（若已设置），目标为 <strong>最新批次</strong>；也可下拉切换为任意历史日期做对比。
+    </div>
+  {% else %}
+
+  <div class="meta-bar">
+    <span class="tag">设备：<strong>{{ device }}</strong></span>
+    <span class="tag">命令：<code>{{ command }}</code></span>
+    <span class="tag">基准：<code>{{ left_time }}</code>{% if left_missing %}<span class="miss-tag">无数据</span>{% endif %}</span>
+    <span class="tag">目标：<code>{{ right_time }}</code>{% if right_missing %}<span class="miss-tag">无数据</span>{% endif %}</span>
+    <a href="/new/history/" class="btn btn-default btn-xs" style="margin-left:auto;">返回巡检历史</a>
+  </div>
+
+  <div class="tab-btns">
+    <button class="tab-btn active" onclick="switchTab(this,'tab-diff')">差异对比视图</button>
+    <button class="tab-btn" onclick="switchTab(this,'tab-raw')">原始输出</button>
+    <button class="tab-btn" onclick="switchTab(this,'tab-extract')">提取字段</button>
+  </div>
+
+  <div id="tab-diff" class="tab-pane active">
+    <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;"><span style="background:#e6ffec;padding:2px 8px;border-radius:3px;">新增行</span></span>
+      <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;"><span style="background:#ffebe9;padding:2px 8px;border-radius:3px;">删除行</span></span>
+      <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;"><span style="background:#fff8c5;padding:2px 8px;border-radius:3px;">变更行</span></span>
+      <label style="margin-left:auto;font-size:.78rem;display:flex;align-items:center;gap:5px;">
+        <input type="checkbox" id="chk-ctx" onchange="toggleCtx()"> 只显示差异行
+      </label>
+    </div>
+    <div class="diff-wrap" id="diff-container">
+      {% if diff_table %}{{ diff_table }}{% else %}<div style="padding:40px;text-align:center;color:#57606a;">无差异内容（两侧输出完全一致）</div>{% endif %}
+    </div>
+  </div>
+
+  <div id="tab-raw" class="tab-pane">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <div style="font-size:.75rem;font-weight:600;color:#cf222e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">基准值（{{ left_time }}）</div>
+        <div class="raw-wrap">{{ left_result|default:"（未找到数据）" }}</div>
+      </div>
+      <div>
+        <div style="font-size:.75rem;font-weight:600;color:#1a7f37;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">目标值（{{ right_time }}）</div>
+        <div class="raw-wrap">{{ right_result|default:"（未找到数据）" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-extract" class="tab-pane">
+    {% if extract_parser %}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <div style="font-size:.75rem;font-weight:600;color:#cf222e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">基准（{{ left_time }}）</div>
+        {% if left_extract %}<table class="ext-tb">{% for k,v in left_extract %}<tr><td>{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}</table>
+        {% else %}<div class="raw-wrap" style="background:#f6f8fa;color:#57606a;">无提取字段</div>{% endif %}
+      </div>
+      <div>
+        <div style="font-size:.75rem;font-weight:600;color:#1a7f37;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">目标（{{ right_time }}）</div>
+        {% if right_extract %}<table class="ext-tb">{% for k,v in right_extract %}<tr><td>{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}</table>
+        {% else %}<div class="raw-wrap" style="background:#f6f8fa;color:#57606a;">无提取字段</div>{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="hint-box">
+      该命令未配置「字段提取器」。前往 <strong>巡检项管理</strong> 编辑此命令，将「字段提取器」设为 <code>memory</code>，即可在此查看结构化的内存指标（仅展示，不影响判定）。
+    </div>
+    {% endif %}
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}
+{% block js %}
+<script>
+function switchTab(btn, id) {
+  document.querySelectorAll(".tab-btn").forEach(function(b){b.classList.remove("active");});
+  document.querySelectorAll(".tab-pane").forEach(function(p){p.classList.remove("active");});
+  btn.classList.add("active");
+  document.getElementById(id).classList.add("active");
+}
+function toggleCtx() {
+  var checked = document.getElementById("chk-ctx").checked;
+  var rows = document.querySelectorAll("#diff-container tr");
+  rows.forEach(function(tr) {
+    var tds = tr.querySelectorAll("td");
+    var hasDiff = false;
+    tds.forEach(function(td){
+      if(td.className && (td.className.indexOf("diff_add")>=0
+         || td.className.indexOf("diff_sub")>=0
+         || td.className.indexOf("diff_chg")>=0)) hasDiff=true;
+    });
+    if(checked && !hasDiff && !tr.querySelector("th")) tr.style.display="none";
+    else tr.style.display="";
+  });
+}
+</script>
+{% endblock %}

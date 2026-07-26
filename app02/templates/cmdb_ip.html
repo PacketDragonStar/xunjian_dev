@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--accent:#0F6E56;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1080px;margin:0 auto;padding:26px 16px;}
+.bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.bar h4{margin:0;font-weight:700;}
+.cnt{color:#57606a;font-size:.8rem;margin-left:8px;font-weight:400;}
+.filt{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.filt select,.filt input{height:32px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font-size:.85rem;background:#fff;}
+.filt input{width:260px;}
+.tb{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.tb table{margin:0;font-size:.85rem;width:100%;}
+.tb thead th{background:#f6f8fa;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#57606a;border-bottom:2px solid var(--border);white-space:nowrap;padding:10px 12px;text-align:left;}
+.tb tbody td{padding:9px 12px;border-bottom:1px solid #eef1f4;white-space:nowrap;}
+.tb tbody tr:hover{background:#f6fbff;}
+.bk{padding:2px 9px;border-radius:20px;font-size:.73rem;font-weight:600;white-space:nowrap;}
+.bk-b{background:#ddf4ff;color:#0550ae;}
+.bk-gray{background:#f3f4f6;color:#57606a;}
+.empty{padding:48px;text-align:center;color:#8c959f;font-size:.9rem;}
+code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:.78rem;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <div class="bar">
+    <h4>CMDB 接口 IP<span class="cnt">共 {{ queryset|length }} 条</span></h4>
+    <form class="filt" method="get">
+      <select name="site" onchange="this.form.submit()">
+        <option value="">全部站点</option>
+        {% for s in sites %}<option value="{{ s }}" {% if s == site %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <input name="q" value="{{ q }}" placeholder="IP / CIDR / 接口 / 设备...">
+      <button class="btn btn-primary btn-sm" type="submit">搜索</button>
+    </form>
+  </div>
+  <div class="tb">
+    <table>
+      <thead><tr>
+        <th>设备</th><th>接口</th><th>IP/CIDR</th><th>VRF</th><th>网关</th>
+      </tr></thead>
+      <tbody>
+      {% for ip in queryset %}
+      <tr>
+        <td>{{ ip.device.name }}</td>
+        <td><code>{{ ip.interface_name }}</code></td>
+        <td><code>{{ ip.cidr }}</code></td>
+        <td>{% if ip.vrf %}{{ ip.vrf }}{% else %}<span class="bk bk-gray">—</span>{% endif %}</td>
+        <td>{% if ip.gateway %}{{ ip.gateway }}{% else %}<span class="bk bk-gray">—</span>{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5"><div class="empty">暂无 IP 数据，请先执行 <code>python manage.py sync_cmdb</code></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

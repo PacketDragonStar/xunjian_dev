@@ -1,124 +1,93 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>网络巡检平台</title>
     <link rel="stylesheet" href="{% static 'plugins/bootstrap-3.4.1/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}">
     <style>
-        .navbar {
-            border-radius: 0;
-        }
-
-        .dropdown-menu {
-            min-width: 85px;
-            text-align: center;
-        }
-        .hidden-column {
-             display: none; /*隐藏列*/
-         }
-
-        #logo {
-            margin: 8px 15px auto auto;
-            height: 36px;
-        }
-
-        .navbar-default .navbar-nav > li > a:hover {
-            color: #333;
-            background-color: #e7e7e7;
-        }
-
-        .dropdown-menu-up {
-            top: auto !important; /* 取消默认的顶部位置 */
-            bottom: 100%; /* 将下拉菜单定位到其触发元素的底部 */
-            margin-top: 0; /* 移除默认的顶部外边距 */
-
-        }
-        .highlight-red {
-    color: red; /* 设置文本颜色为红色 */
-}
-
+        .hidden-column{display:none;}
+        .highlight-red{color:red;}
     </style>
     {% block css %}{% endblock %}
 </head>
 <body>
-
-<div class="navbar navbar-default">
-    <div class="container">
-        <!-- Brand and toggle get grouped for better mobile display -->
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
-                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <div class="nav navbar-nav">
-                <a href="/search/history">
-                    <img id="logo" src="{% static 'img/联通标识中英双语横版.png' %}" alt="">
-                </a>
-            </div>
-
+<div class="xj-app">
+    <aside class="xj-sidebar">
+        <div class="xj-brand">
+            <div class="xj-logo">巡</div>
+            <span>网络巡检</span>
         </div>
+        <nav class="xj-nav">
+            <div class="xj-nav-group">概览</div>
+            <a href="/dashboard/">仪表盘</a>
 
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-            <ul class="nav navbar-nav navbar-left">
-                <li><a href="/search/history/">网络巡检 </a></li>
-                <li><a href="/host/list/">主机巡检 </a></li>
-                <li><a href="/logBackup/list">配置备份 </a></li>
-		 {% if request.session.info.name == "admin" %}
-{#                <li><a href="/search/history/">巡检历史 </a></li>#}
-                <li><a href="/device/list/">设备管理 </a></li>
-                <li><a href="/admin/list/">人员管理 </a></li>
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-                       aria-expanded="false">测试项 <span class="caret"></span></a>
-                    <ul class="dropdown-menu">
-                        <li><a href="/depart/list/">部门管理 <span class="sr-only">(current)</span></a>
-                        </li>
-                        <li><a href="/func/list/">函数管理<span class="sr-only">(current)</span></a>
-                        </li>
-                        <li><a href="/fbounc/list/">绑定函数组 <span class="sr-only">(current)</span></a>
-                        </li>
-{#                        <li><a href="/upload/list/">城市管理 <span class="sr-only">(current)</span></a>#}
-{#                        </li>#}
-{#                        <li><a href="/upload/form/">Form上传 <span class="sr-only">(current)</span></a>#}
-{#                        </li>#}
-{#                        <li><a href="/upload/modalForm/">ModalForm上传 <span class="sr-only">(current)</span></a>#}
-{#                        </li>#}
-                    </ul>
-                </li>
-    {% endif %}
-            </ul>
+            <div class="xj-nav-group">资产与配置</div>
+            <a href="/new/group/list/">设备分组</a>
+            <a href="/new/device/list/">设备管理</a>
+            <a href="/new/checkitem/list/">巡检项</a>
+            <a href="/new/checkset/list/">检查集</a>
+            <a href="/cmdb/device/">CMDB-设备</a>
+            <a href="/cmdb/interface/">CMDB-接口</a>
+            <a href="/cmdb/link/">CMDB-链路</a>
+            <a href="/cmdb/ip/">CMDB-IP</a>
 
-            <ul class="nav navbar-nav navbar-right">
-                {#                <li><a href="/login/">登录</a></li>#}
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-                       aria-expanded="false">{{ request.session.info.name }} <span class="caret"></span></a>
+            <div class="xj-nav-group">巡检执行</div>
+            <a href="/new/xunjian/">发起巡检</a>
+            <a href="/task/center/">任务中心</a>
 
-                    <ul class="dropdown-menu">
-{#                        <li><a href="#">个人资料</a></li>#}
-{#                        <li><a href="/admin/list/">账号信息</a></li>#}
-                        <li><a href="/admin/{{ request.session.info.id }}/reset/">更改密码</a></li>
-                        <li role="separator" class="divider"></li>
-                        <li><a href="/logout/">注销</a></li>
-                    </ul>
+            <div class="xj-nav-group">结果与分析</div>
+            <a href="/new/history/">巡检历史</a>
+            <a href="/new/report/overview/">整体巡检报告</a>
+            <a href="/new/compare/">命令对比</a>
+            <a href="/new/confirm/">异常确认</a>
+            <a href="/host/list/">主机巡检</a>
 
-                </li>
-            </ul>
-        </div><!-- /.navbar-collapse -->
-    </div><!-- /.container-fluid -->
-</div>
+            <div class="xj-nav-group">系统</div>
+            <a href="/new/import/">AI批量导入</a>
+            <a href="/new/tools/test_checker/">Checker 微调工具</a>
+            {% if request.session.info.name == "admin" %}
+            <a href="/depart/list/">部门管理</a>
+            <a href="/admin/list/">人员管理</a>
+            {% endif %}
+        </nav>
+    </aside>
 
-<div>
-    {% block content %}{% endblock %}
+    <div class="xj-main">
+        <header class="xj-topbar">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <button class="xj-menu-btn" id="xjMenuBtn" type="button">☰</button>
+                <span class="xj-top-title">网络巡检平台</span>
+            </div>
+            <div class="xj-user">
+                <span class="xj-user-toggle">{{ request.session.info.name }} ▾</span>
+                <div class="xj-user-menu">
+                    <a href="/admin/{{ request.session.info.id }}/reset/">更改密码</a>
+                    <a href="/logout/">注销</a>
+                </div>
+            </div>
+        </header>
+        <div class="xj-content">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
 </div>
 
 <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
 <script src="{% static 'plugins/bootstrap-3.4.1/js/bootstrap.min.js' %}"></script>
-
+<script>
+    document.getElementById('xjMenuBtn').onclick = function(){
+        document.body.classList.toggle('xj-nav-open');
+    };
+    (function(){
+        var path = location.pathname;
+        document.querySelectorAll('.xj-nav a').forEach(function(a){
+            if(a.getAttribute('href') === path){ a.classList.add('active'); }
+        });
+    })();
+</script>
 {% block js %}{% endblock %}
 </body>
 </html>

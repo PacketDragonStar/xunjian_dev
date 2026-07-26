@@ -1,0 +1,297 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--ok:#1a7f37;--warn:#9a6700;--fail:#cf222e;--accent:#0969da;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1100px;margin:0 auto;padding:26px 16px;}
+.sb-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;}
+.sb{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-size:.82rem;color:#57606a;}
+.sb strong{display:block;font-size:1.2rem;font-weight:700;line-height:1;margin-bottom:2px;color:#0d1117;}
+
+.tabs-nav{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border);}
+.tabs-nav a{display:block;padding:10px 22px;font-size:.88rem;font-weight:600;color:#57606a;text-decoration:none;border-radius:8px 8px 0 0;border:1px solid transparent;border-bottom:none;margin-bottom:-2px;transition:all .2s;}
+.tabs-nav a:hover{color:#0d1117;background:#f6f8fa;}
+.tabs-nav a.active{color:var(--accent);background:var(--card);border-color:var(--border);border-bottom:2px solid var(--card);}
+
+.dev-section{border:1px solid var(--border);border-radius:8px;margin-bottom:16px;overflow:hidden;background:var(--card);}
+.dev-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;background:#f6f8fa;border-bottom:1px solid var(--border);}
+.dev-header:hover{background:#eef1f5;}
+.dev-header h6{margin:0;font-size:.92rem;font-weight:700;}
+.dev-body{padding:0;border-top:none;}
+.dev-body.collapsed{display:none;}
+
+.cmd-row{border-bottom:1px solid #eaeef2;padding:10px 16px;transition:background .15s;}
+.cmd-row:last-child{border-bottom:none;}
+.cmd-row:hover{background:#f6fbff;}
+.cmd-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px;}
+.cmd-head code{font-size:.83rem;color:#0d1117;}
+.cmd-body{display:none;margin-top:8px;}
+.cmd-body.show{display:block;}
+.cmd-body pre{background:#0d1117;color:#c9d1d9;border-radius:6px;padding:12px;font-size:.78rem;font-family:Consolas,monospace;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin:0;border:1px solid #30363d;}
+
+.anom-item{padding:10px 16px;border-bottom:1px solid #eaeef2;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.anom-item:last-child{border-bottom:none;}
+.anom-item .notes{font-size:.82rem;color:#57606a;flex:1;}
+.anom-item .actions{display:flex;gap:6px;flex-shrink:0;}
+
+.bk-ok{background:#dafbe1;color:#1a7f37;padding:2px 9px;border-radius:20px;font-size:.76rem;font-weight:600;}
+.bk-warn{background:#fff8c5;color:#9a6700;padding:2px 9px;border-radius:20px;font-size:.76rem;font-weight:600;}
+.bk-confirmed{background:#f3f4f6;color:#8c959f;padding:2px 9px;border-radius:20px;font-size:.76rem;}
+.badge{font-size:.72rem;padding:2px 8px;border-radius:12px;font-weight:600;}
+.badge.anomaly{background:#fff8c5;color:#9a6700;}
+.badge.ok{background:#dafbe1;color:#1a7f37;}
+
+.btn-xs{border:1px solid var(--border);border-radius:4px;padding:3px 11px;font-size:.76rem;color:#57606a;text-decoration:none;background:transparent;display:inline-block;}
+.btn-xs:hover{background:#f6f8fa;color:#0d1117;}
+.btn-xs-b{border:1px solid #b6d4f7;border-radius:4px;padding:3px 11px;font-size:.76rem;color:#0550ae;text-decoration:none;background:transparent;display:inline-block;}
+.btn-xs-b:hover{background:#ddf4ff;}
+
+.selector-panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.selector-panel label{font-size:.8rem;font-weight:600;color:#57606a;white-space:nowrap;}
+.selector-panel select{min-width:160px;max-width:280px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:.85rem;}
+
+@media(max-width:640px){.anom-item{flex-direction:column;align-items:flex-start;}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <nav aria-label="breadcrumb" style="margin-bottom:14px;">
+    <ol class="breadcrumb" style="background:transparent;padding:0;margin:0;">
+      <li class="breadcrumb-item"><a href="/new/history/">巡检历史</a></li>
+      <li class="breadcrumb-item active">巡检详情</li>
+    </ol>
+  </nav>
+
+  {% if record %}
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h5 style="margin:0;font-weight:700;">{{ record.time }}</h5>
+      <div style="font-size:.8rem;color:#57606a;margin-top:3px;">
+        操作人：{{ record.operator }}&nbsp;&nbsp;|&nbsp;&nbsp;
+        {% if record.result == "正常" %}<span class="bk-ok">结果：正常</span>
+        {% else %}<span class="bk-warn">结果：异常</span>{% endif %}
+        {% if record.is_baseline %}&nbsp;<span style="background:#ddf4ff;color:#0550ae;padding:2px 9px;border-radius:20px;font-size:.76rem;font-weight:600;">基线</span>{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="/new/confirm/all/?time={{ time }}" class="btn btn-default btn-sm" onclick="return confirm('确认全部异常？');">一键确认全部</a>
+      <a href="/new/history/" class="btn btn-default btn-sm">返回列表</a>
+    </div>
+  </div>
+  <div class="sb-row">
+    <div class="sb"><strong>{{ record.device_count }}</strong>巡检设备</div>
+    <div class="sb"><strong style="color:#1a7f37;">{{ record.ok_devices }}</strong>全部正常</div>
+    <div class="sb"><strong style="color:#9a6700;">{{ record.anomaly_devices }}</strong>发现异常</div>
+    <div class="sb"><strong style="color:#cf222e;">{{ record.failed_devices }}</strong>连接失败</div>
+    <div class="sb"><strong>{{ record.expected_count }}</strong>应执行巡检项</div>
+    <div class="sb"><strong{% if record.missing_count > 0 %} style="color:#9a6700;"{% endif %}>{{ record.check_count }}</strong>已回显{% if record.missing_count > 0 %}（缺{{ record.missing_count }}）{% endif %}</div>
+  </div>
+  {% endif %}
+
+  {% if record.failed_devices > 0 %}
+  <div style="background:#ffebe9;border:1px solid #ffb3b0;border-radius:8px;padding:16px 20px;margin-bottom:16px;">
+    <strong style="color:#cf222e;">&#9888; {{ record.failed_devices }} 台设备连接失败</strong>
+    <div style="font-size:.83rem;color:#57606a;margin-top:4px;">请检查设备 IP、账号密码及设备类型是否正确。</div>
+  </div>
+  {% endif %}
+
+  <!-- 标签页导航 -->
+  <div class="tabs-nav">
+    <a href="?time={{ time }}&tab=anomalies" class="{% if tab == 'anomalies' %}active{% endif %}">
+      ⚠️ 异常项 {% if anomalies.exists %}({{ anomalies|length }}){% endif %}
+    </a>
+    <a href="?time={{ time }}&tab=raw" class="{% if tab == 'raw' %}active{% endif %}">
+      📋 命令回显（{{ device_names|length }} 台设备 {{ all_commands|length }} 条命令）
+    </a>
+  </div>
+
+  {% if tab == 'anomalies' %}
+  <!-- ===== 异常项标签页 ===== -->
+  <div style="margin-top:16px;">
+    {% if not anomalies.exists and record.failed_devices == 0 %}
+    <div style="background:var(--card);border:1px solid #dafbe1;border-radius:8px;padding:40px;text-align:center;color:#1a7f37;font-size:1rem;">
+      &#10003; 本次巡检无异常
+    </div>
+    {% endif %}
+
+    {% regroup anomalies by device as device_list %}
+    {% for dev_group in device_list %}
+    <div class="dev-section">
+      <div class="dev-header" onclick="toggleSection(this)">
+        <h6>
+          &#128204; {{ dev_group.grouper }}
+          <span class="badge anomaly">{{ dev_group.list|length }} 项异常</span>
+        </h6>
+        <span style="font-size:.82rem;color:#8c959f;">&#9660;</span>
+      </div>
+      <div class="dev-body">
+        {% for anom in dev_group.list %}
+        <div class="anom-item">
+          <code style="font-size:.83rem;">{{ anom.command }}</code>
+          <span class="notes">— {{ anom.notes|default:"未知异常" }}</span>
+          <span style="font-size:.82rem;white-space:nowrap;">
+            {% if anom.confirm %}<span class="bk-confirmed">已确认</span>
+            {% else %}<span class="bk-warn">未确认</span>{% endif %}
+          </span>
+          <div class="actions">
+            <a href="/new/compare/?command={{ anom.command|urlencode }}&time={{ time }}&device={{ anom.device|urlencode }}"
+               class="btn-xs-b">完整对比</a>
+            {% if not anom.confirm %}
+            <a href="/new/confirm/?time={{ time }}&device={{ anom.device|urlencode }}&command={{ anom.command|urlencode }}"
+               class="btn-xs">确认</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <!-- ===== 命令回显标签页 ===== -->
+  <div style="margin-top:16px;">
+    {% if device_results %}
+    <div class="selector-panel">
+      <label>🔍 快捷定位：</label>
+      <select id="sel-device" onchange="onDeviceChange()">
+        <option value="">-- 选择设备 --</option>
+        {% for dname, dummy in device_results.items %}<option value="{{ dname }}">{{ dname }}</option>{% endfor %}
+      </select>
+      <select id="sel-command" onchange="onCommandChange()">
+        <option value="">-- 选择命令 --</option>
+      </select>
+      <button class="btn-xs-b" onclick="jumpToDeviceAndCmd()" style="font-size:.84rem;">定位</button>
+      <button class="btn-xs-b" onclick="downloadConfig()" style="font-size:.84rem;background:#1a7f37;color:#fff;border:1px solid #1a7f37;">⬇️ 下载配置</button>
+    </div>
+
+    {% for dev_name, results in device_results.items %}
+    <div class="dev-section" data-device="{{ dev_name }}">
+      <div class="dev-header" onclick="toggleSection(this)">
+        <h6>
+          &#128194; {{ dev_name }}
+          <span class="badge ok">{{ results|length }} 条命令</span>
+        </h6>
+        <span style="font-size:.82rem;color:#8c959f;">&#9660;</span>
+      </div>
+      <div class="dev-body">
+        {% for r in results %}
+        <div class="cmd-row" data-device="{{ dev_name }}" data-command="{{ r.command }}">
+          <div class="cmd-head" onclick="toggleCmdBody(this)">
+            <code>{{ r.command }}</code>
+            <span style="font-size:.82rem;color:#8c959f;">{{ r.result|length }} 字符 &#9660;</span>
+          </div>
+          <div class="cmd-body">
+            <pre>{{ r.result|default:"（无输出）" }}</pre>
+            <div style="margin-top:6px;">
+              <a href="/new/compare/?command={{ r.command|urlencode }}&time={{ time }}&device={{ r.device|urlencode }}"
+                 class="btn-xs-b">与基线对比</a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:40px;text-align:center;color:#8c959f;">
+      该次巡检无命令回显数据（可能 SSH 连接全部失败）
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block js %}
+<script>
+function toggleSection(header) {
+  var body = header.nextElementSibling;
+  body.classList.toggle('collapsed');
+  var arrow = header.querySelector('span');
+  if (arrow) arrow.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+}
+
+function toggleCmdBody(head) {
+  var body = head.nextElementSibling;
+  body.classList.toggle('show');
+  var arrow = head.querySelector('span');
+  if (arrow) arrow.textContent = body.classList.contains('show') ? '▲' : '▼';
+}
+
+var _deviceCmdMap = {};
+{% for dev_name, results in device_results.items %}
+_deviceCmdMap['{{ dev_name|escapejs }}'] = [
+  {% for r in results %}'{{ r.command|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}
+];
+{% endfor %}
+
+function onDeviceChange() {
+  var dev = document.getElementById('sel-device').value;
+  var cmdSel = document.getElementById('sel-command');
+  cmdSel.innerHTML = '<option value="">-- 选择命令 --</option>';
+  if (!dev) return;
+  var cmds = _deviceCmdMap[dev] || [];
+  cmds.forEach(function(c, i) {
+    var opt = document.createElement('option');
+    opt.value = i; opt.textContent = c;
+    cmdSel.appendChild(opt);
+  });
+}
+
+function onCommandChange() {}
+
+function jumpToDeviceAndCmd() {
+  var dev = document.getElementById('sel-device').value;
+  if (!dev) return;
+  // 用 data-device 属性定位设备卡片
+  var devBlock = document.querySelector('.dev-section[data-device="' + dev + '"]');
+  if (!devBlock) {
+    // fallback: 遍历所有 .dev-section
+    var all = document.querySelectorAll('.dev-section');
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].getAttribute('data-device') === dev) {
+        devBlock = all[i];
+        break;
+      }
+    }
+  }
+  if (devBlock) {
+    devBlock.scrollIntoView({behavior:'smooth'});
+    var header = devBlock.querySelector('.dev-header');
+    if (header) {
+      var body = header.nextElementSibling;
+      if (body && body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        var arrow = header.querySelector('span');
+        if (arrow) arrow.textContent = '▼';
+      }
+    }
+  }
+  // 定位到选定命令
+  var selCmd = document.getElementById('sel-command');
+  var cmdVal = selCmd.options[selCmd.selectedIndex] ? selCmd.options[selCmd.selectedIndex].textContent : '';
+  if (cmdVal && devBlock) {
+    var cmdRows = devBlock.querySelectorAll('.cmd-row');
+    for (var j = 0; j < cmdRows.length; j++) {
+      if (cmdRows[j].getAttribute('data-command') === cmdVal) {
+        setTimeout(function(row) {
+          row.scrollIntoView({behavior:'smooth'});
+          var body = row.querySelector('.cmd-body');
+          if (body) body.classList.add('show');
+        }.bind(null, cmdRows[j]), 300);
+        break;
+      }
+    }
+  }
+}
+
+function downloadConfig() {
+  var dev = document.getElementById('sel-device').value;
+  if (!dev) { alert('请先选择设备'); return; }
+  var url = '/new/config/download/?time=' + encodeURIComponent('{{ time|escapejs }}') +
+            '&device=' + encodeURIComponent(dev);
+  window.open(url, '_blank');
+}
+</script>
+{% endblock %}
