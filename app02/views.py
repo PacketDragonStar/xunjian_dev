@@ -622,6 +622,7 @@ def new_device_list(request):
         d.caps_list = caps or []                    # [] 表示已检测确无特性
         d.caps_ts = extra.get('capabilities_ts')
         d.protocol = bool(extra.get('protocol_inspection'))
+        d.pending_list = extra.get('pending_capabilities') or []
     return render(request, 'new_device_list.html', {
         'queryset':    devs,
         'page_string': page_obj.html(),

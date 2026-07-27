@@ -74,6 +74,10 @@ body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif
           <div style="margin-top:5px;">
             <button class="cap-xa" id="btn-disc-{{ dev.id }}" onclick="discoverCap({{ dev.id }})">检测能力</button>
             <button class="cap-xa {% if dev.protocol %}on{% endif %}" id="btn-prot-{{ dev.id }}" onclick="toggleProtocol({{ dev.id }})">{% if dev.protocol %}协议开{% else %}协议关{% endif %}</button>
+            <button class="cap-xa" onclick="openItems({{ dev.id }})">巡检项</button>
+            {% if dev.pending_list %}
+            <button class="cap-xa" style="color:#d97706;border-color:#fbbf24;" onclick="confirmCap({{ dev.id }})">确认能力({{ dev.pending_list|length }})</button>
+            {% endif %}
           </div>
         </td>
         <td>
@@ -133,6 +137,35 @@ body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif
     <div class="mbt">
       <button class="bc" onclick="closeM()">取消</button>
       <button class="bs" onclick="doSave()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bd" id="modal-items">
+  <div class="mb" style="width:680px;">
+    <h5 id="mit">巡检项管理</h5>
+    <div id="items-bound" style="margin-bottom:16px;"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <label style="font-size:.78rem;font-weight:600;color:#57606a;white-space:nowrap;">添加巡检项</label>
+        <select id="if-feature" onchange="loadAvailable()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
+          <option value="">全部</option>
+          <option value="base">基础</option>
+          <option value="ospf">OSPF</option>
+          <option value="bgp">BGP</option>
+          <option value="vrrp">VRRP</option>
+          <option value="irf">IRF</option>
+          <option value="m-lag">M-LAG</option>
+          <option value="rbm">RBM</option>
+          <option value="security">安全域/策略</option>
+          <option value="lacp">链路聚合</option>
+          <option value="nqa">NQA</option>
+        </select>
+      </div>
+      <div id="items-available" style="max-height:200px;overflow-y:auto;font-size:.78rem;"></div>
+    </div>
+    <div class="mbt">
+      <button class="bc" onclick="closeItems()">关闭</button>
     </div>
   </div>
 </div>
@@ -205,5 +238,79 @@ function doSave(){
   });
 }
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeM();});
+
+// ── 巡检项管理 ──
+var _itemsDeviceId=null;
+function openItems(id){
+  _itemsDeviceId=id;
+  document.getElementById('mit').textContent='巡检项管理 — 设备#'+id;
+  document.getElementById('modal-items').classList.add('show');
+  loadBound();loadAvailable();
+}
+function closeItems(){document.getElementById('modal-items').classList.remove('show');}
+function loadBound(){
+  var fd=new FormData();fd.append('uid',_itemsDeviceId);fd.append('action','bound_items');
+  fetch('/new/device/capability/',{method:'POST',body:fd,headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    var el=document.getElementById('items-bound');
+    if(!res.status||!res.items.length){
+      el.innerHTML='<span class="cap-muted">该设备分组（'+res.group+'）暂无绑定巡检项</span>';
+    }else{
+      var h='<div style="font-size:.78rem;font-weight:600;color:#57606a;margin-bottom:6px;">已绑定巡检项（分组：'+res.group+'）</div>';
+      res.items.forEach(function(it){
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #f0f0f0;">';
+        h+='<span><span class="cap-b" style="margin-right:6px;">'+it.feature+'</span>'+it.name+' <code style="font-size:.7rem;color:#8c959f;">'+it.command+'</code></span>';
+        h+='<button class="cap-xa xr" style="font-size:.68rem;padding:1px 6px;" onclick="unlinkItem('+it.id+')">移除</button></div>';
+      });
+      el.innerHTML=h;
+    }
+  });
+}
+function loadAvailable(){
+  var feat=document.getElementById('if-feature').value;
+  var fd=new FormData();fd.append('uid',_itemsDeviceId);fd.append('action','link_items');
+  if(feat)fd.append('feature',feat);
+  fetch('/new/device/capability/',{method:'POST',body:fd,headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    var el=document.getElementById('items-available');
+    if(!res.status||!res.items.length){
+      el.innerHTML='<span class="cap-muted">没有更多可添加的巡检项</span>';
+    }else{
+      var h='';
+      res.items.forEach(function(it){
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #f0f0f0;">';
+        h+='<span><span class="cap-b" style="margin-right:6px;">'+it.feature+'</span>'+it.name+' <code style="font-size:.7rem;color:#8c959f;">'+it.command+'</code></span>';
+        h+='<button class="cap-xa" style="font-size:.68rem;padding:1px 6px;" onclick="linkItem('+it.id+')">添加</button></div>';
+      });
+      el.innerHTML=h;
+    }
+  });
+}
+function linkItem(itemId){
+  var fd=new FormData();fd.append('uid',_itemsDeviceId);fd.append('action','link_items');fd.append('item_ids',itemId);
+  fetch('/new/device/capability/',{method:'POST',body:fd,headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    if(res.status){loadBound();loadAvailable();}else{alert('添加失败：'+res.error);}
+  });
+}
+function unlinkItem(itemId){
+  var fd=new FormData();fd.append('uid',_itemsDeviceId);fd.append('action','unlink_items');fd.append('item_ids',itemId);
+  fetch('/new/device/capability/',{method:'POST',body:fd,headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    if(res.status){loadBound();loadAvailable();}else{alert('移除失败：'+res.error);}
+  });
+}
+function confirmCap(id){
+  if(!confirm('确认启用检测到的能力，并自动绑定对应巡检项？'))return;
+  var fd=new FormData();fd.append('uid',id);fd.append('action','confirm');
+  fetch('/new/device/capability/',{method:'POST',body:fd,headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    if(res.status){
+      alert('已确认！绑定'+res.check_items_added+'个巡检项');
+      location.reload();
+    }else{alert('确认失败：'+res.error);}
+  });
+}
+document.getElementById('modal-items').addEventListener('click',function(e){if(e.target===this)closeItems();});
 </script>
 {% endblock %}
