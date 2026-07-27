@@ -13,7 +13,7 @@ from django.core.management.base import BaseCommand
 from netmiko import ConnectHandler
 
 from app02.models import NewDevice
-from app02.engine.executor import _build_conn_kwargs
+from app02.engine.device_session import DeviceSession, _build_conn_kwargs
 from app02.engine.capability import ensure_capabilities
 
 

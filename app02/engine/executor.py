@@ -2,8 +2,6 @@
 import logging
 import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from netmiko import ConnectHandler
-
 from django.db import close_old_connections
 from django.db.models import Q
 from django.db.utils import OperationalError
@@ -12,7 +10,7 @@ from app02.models import (
     AnomalyRecord, XunjianRecord, XunjianTask, DeviceParseResult, InspectionGap
 )
 from app02.engine.pipeline import run_check_item
-from app02.engine.capability import ensure_capabilities, PROBE_COMMAND
+from app02.engine.device_session import DeviceSession, _build_conn_kwargs
 from app02.parsers import SCHEMA_VERSION
 from app02.engine.reporter import (
     XunjianReport, DeviceReport, CheckItemReport,
@@ -20,26 +18,6 @@ from app02.engine.reporter import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _normalize_device_type(device_type: str) -> str:
-    """兼容历史设备类型命名，转换为 netmiko 可识别值"""
-    dt = (device_type or '').strip().lower()
-    if not dt:
-        return 'huawei'
-    # H3C/comware 设备
-    if 'h3c' in dt or 'comware' in dt or 'hp_comware' in dt:
-        return 'hp_comware'
-    # 华为
-    if 'huawei' in dt:
-        return 'huawei'
-    # 华为 VRPv8（NE系列）
-    if 'vrpv8' in dt:
-        return 'huawei_vrpv8'
-    # cisco（v2 不做，回退到 hp_comware）
-    if 'cisco' in dt or 'ios' in dt or 'nxos' in dt:
-        return 'hp_comware'
-    return dt
 
 
 # ═══════════════════════════════════════════════════════════
@@ -192,31 +170,6 @@ def _get_baseline_result(baseline_record, device_name: str, command: str) -> str
 # 单台设备执行
 # ═══════════════════════════════════════════════════════════
 
-def _build_conn_kwargs(device: NewDevice) -> dict:
-    """
-    根据 NewDevice 连接字段构造 netmiko ConnectHandler 参数。
-
-    支持：端口(port)、enable密码(secret)、SSH密钥(use_keys/key_file)、telnet。
-    """
-    _dtype = _normalize_device_type(device.device_type)
-    kwargs = dict(
-        device_type=('hp_comware_telnet' if device.conn_type == 'telnet' else _dtype),
-        ip=device.ip,
-        username=device.username,
-        password=device.password,
-        conn_timeout=30,
-        fast_cli=False,
-        global_delay_factor=2,
-    )
-    if device.port:
-        kwargs['port'] = device.port
-    if device.enable_password:
-        kwargs['secret'] = device.enable_password
-    if device.ssh_key_file:
-        kwargs.update(use_keys=True, key_file=device.ssh_key_file)
-    return kwargs
-
-
 def _xunjian_one_device(
     device: NewDevice,
     check_items,
@@ -234,11 +187,11 @@ def _xunjian_one_device(
 
     # 空巡检项：提前检查（check_items 已在主线程物化为 list）
     actual_items = list(check_items) if hasattr(check_items, '__iter__') else []
+    dev_report.expected = len(actual_items)
     if len(actual_items) == 0:
         logger.warning(f'[{device.name}] 所属分组无巡检项，跳过')
         dev_report.status = 'failed'
         dev_report.connect_error = '所属分组未绑定任何巡检项'
-        dev_report.expected = 0
         CheckResult.objects.create(
             time=xunjian_time,
             device=device.name,
@@ -248,42 +201,14 @@ def _xunjian_one_device(
         return dev_report
 
     # 连接设备
+    session = DeviceSession(device)
     try:
-        _conn_kwargs = _build_conn_kwargs(device)
-        connection = ConnectHandler(**_conn_kwargs)
-        # 关分页（hp_comware V7 默认分页）
-        try:
-            connection.send_command(
-                'screen-length disable',
-                expect_string=r'>|\$|#|\]',
-                read_timeout=10,
-            )
-        except Exception as e:
-            logger.warning(f'[{device.name}] 关分页预命令失败(忽略): {e}')
-        logger.info(f'[{device.name}] 连接成功')
-
-        # —— v3 opt-in 能力门控：开关开启时，确保能力已探测并按能力重算巡检项 ——
-        extra = device.extra or {}
-        if extra.get('protocol_inspection'):
-            try:
-                ensure_capabilities(device, connection)   # 探测(过期则重探) + 写回 extra
-                # 探测后重算本设备应执行的巡检项（时序修复：actual_items 必须反映最新能力）
-                items_qs = _get_items_for_device(device)
-                if items_qs is not None:
-                    actual_items = list(items_qs)
-            except Exception as cap_e:
-                logger.warning(f'[{device.name}] 能力门控重算失败，回退到主线程分配项: {cap_e}')
-            dev_report.expected = len(actual_items)
-        else:
-            # 开关关：仅基础项（actual_items 已由主线程按 base 门控），无需探针
-            dev_report.expected = len(actual_items)
+        connection = session.connect()
     except Exception as e:
         logger.error(f'[{device.name}] 连接失败: {e}')
         dev_report.status = 'failed'
         dev_report.connect_error = str(e)
-        # 连接失败但该设备分配到的巡检项数量仍计入「应执行项数」，避免回显条数随连接抖动而漂移
         dev_report.total = len(actual_items)
-        dev_report.expected = len(actual_items)
         CheckResult.objects.create(
             time=xunjian_time,
             device=device.name,
@@ -298,18 +223,18 @@ def _xunjian_one_device(
             )
         except Exception as db_e:
             logger.error(f'[{device.name}] 写入异常记录失败: {db_e}')
-        # 连接失败 -> 该设备其余分配的巡检项都不会执行。逐条落 CheckResult，
+        # 连接失败 -> 该设备其余分配的巡检项都不会执行。批量落 CheckResult，
         # 避免历史回显「凭空少了一堆命令」且看不出哪些没巡检到。
-        for it in actual_items:
-            try:
-                CheckResult.objects.create(
-                    time=xunjian_time,
-                    device=device.name,
-                    command=it.command,
+        try:
+            CheckResult.objects.bulk_create([
+                CheckResult(
+                    time=xunjian_time, device=device.name, command=it.command,
                     result=f'未执行（连接失败）：{e}',
                 )
-            except Exception:
-                pass
+                for it in actual_items
+            ])
+        except Exception:
+            pass
         return dev_report
 
     # 逐项执行（每个巡检项独立 try，单项异常绝不中断其余项；且保证每条命令都落一条 CheckResult）
@@ -419,10 +344,7 @@ def _xunjian_one_device(
                 status='error', notes=f'采集/落库异常: {item_e}'
             ))
 
-    try:
-        connection.disconnect()
-    except Exception:
-        pass
+    session.disconnect(connection)
 
     if dev_report.anomaly_count > 0:
         dev_report.status = 'anomaly'
