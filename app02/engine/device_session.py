@@ -75,11 +75,6 @@ class DeviceSession:
         kwargs = _build_conn_kwargs(self.device)
         connection = ConnectHandler(**kwargs)
 
-        # IRF 设备名含 &（如 csw001&002），netmiko 的 base_prompt
-        # 匹配会失败。覆盖为通配模式，信任终端提示符以 > # ] 结尾。
-        if '&' in (self.device.name or ''):
-            connection.base_prompt = r'[>#\]]\s*$'
-
         # 关分页（hp_comware V7 默认分页，失败不影响后续）
         try:
             connection.send_command(
