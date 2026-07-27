@@ -47,3 +47,52 @@ def sync_cmdb(task_id, xunjian_time, operator):
         logger.info(f'巡检后自动同步CMDB完成(task={task_id})')
     except Exception as e:
         logger.warning(f'巡检后自动同步CMDB失败(task={task_id}): {e}')
+
+
+@register_hook
+def detect_capabilities(task_id, xunjian_time, operator):
+    """巡检后从 CheckResult 解析能力，写入 pending_capabilities。
+
+    只对未关闭提示（capabilities_nag_disabled != True）的设备运行。
+    """
+    from app02.models import NewDevice, CheckResult
+    from app02.engine.capability import detect_capabilities as _detect
+
+    try:
+        # 取本次巡检采集的 display current-configuration 结果
+        config_map = {
+            cr.device: cr.result
+            for cr in CheckResult.objects.filter(
+                time=xunjian_time, command='display current-configuration',
+            )
+            if cr.result
+        }
+        if not config_map:
+            logger.warning(f'[post-inspection] 未找到 display current-configuration 采集结果(task={task_id})')
+            return
+
+        # 遍历所有启用设备，跳过关闭提示的
+        devices = NewDevice.objects.filter(enabled=True).only('pk', 'name', 'extra')
+        updated = 0
+        for device in devices:
+            extra = device.extra or {}
+            if extra.get('capabilities_nag_disabled'):
+                continue
+            raw = config_map.get(device.name)
+            if not raw:
+                continue
+            detected = _detect(raw)
+            if not detected:
+                continue
+            existing = set(extra.get('capabilities') or [])
+            pending = set(extra.get('pending_capabilities') or [])
+            new = set(detected) - existing - pending
+            if new:
+                extra['pending_capabilities'] = list(pending | new)
+                NewDevice.objects.filter(pk=device.pk).update(extra=extra)
+                updated += 1
+
+        if updated:
+            logger.info(f'[post-inspection] 发现 {updated} 台设备有新能力待确认(task={task_id})')
+    except Exception as e:
+        logger.warning(f'[post-inspection] detect_capabilities 失败(task={task_id}): {e}')
