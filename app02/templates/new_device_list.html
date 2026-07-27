@@ -49,6 +49,7 @@ body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif
       <button class="btn btn-primary btn-sm" onclick="openAdd()">+ 新增设备</button>
       <a href="/new/import/" class="btn btn-default btn-sm">&#8659; AI批量导入</a>
       <button class="btn btn-warning btn-sm" onclick="batchConfirm()">批量确认能力</button>
+      <button class="btn btn-default btn-sm" onclick="batchDiscover()">批量检测能力</button>
     </div>
   </div>
   <div class="tb">
@@ -322,6 +323,18 @@ function confirmCap(id){
       alert('已确认！绑定'+res.check_items_added+'个巡检项');
       location.reload();
     }else{alert('确认失败：'+res.error);}
+  });
+}
+function batchDiscover(){
+  if(!confirm('批量检测所有设备能力？（从最近采集的 CheckResult 解析，不连 SSH）'))return;
+  var btn=event.target; btn.disabled=true; btn.textContent='检测中…';
+  fetch('/new/device/capability/',{method:'POST',body:new URLSearchParams({uid:'0',action:'batch_discover'}),headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    btn.disabled=false; btn.textContent='批量检测能力';
+    if(res.status){
+      alert('完成！检测'+res.devices+'台设备，发现'+res.new_caps+'个新能力');
+      location.reload();
+    }else{alert('失败：'+res.error);}
   });
 }
 function batchConfirm(){

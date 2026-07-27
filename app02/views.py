@@ -739,6 +739,38 @@ def new_device_capability(request):
         return JsonResponse({'status': False, 'error': '仅支持POST'})
     action = request.POST.get('action') or request.GET.get('action')
 
+    # batch_discover 不需要 uid，批量从 CheckResult 检测
+    if action == 'batch_discover':
+        from app02.engine.capability import detect_capabilities as _detect
+        # 每设备取最近一次 display current-configuration
+        configs = {}
+        for cr in CheckResult.objects.filter(
+            command='display current-configuration'
+        ).order_by('device', '-time'):
+            if cr.device not in configs:
+                configs[cr.device] = cr.result
+        done = 0
+        new_total = 0
+        for dev in NewDevice.objects.filter(enabled=True):
+            raw = configs.get(dev.name)
+            if not raw:
+                continue
+            caps = _detect(raw)
+            if not caps:
+                continue
+            extra = dict(dev.extra or {})
+            existing = set(extra.get('capabilities') or [])
+            old_pending = set(extra.get('pending_capabilities') or [])
+            new = set(caps) - existing - old_pending
+            if new:
+                extra['pending_capabilities'] = list(old_pending | new)
+                extra['protocol_inspection'] = True
+                dev.extra = extra
+                dev.save(update_fields=['extra'])
+                new_total += len(new)
+                done += 1
+        return JsonResponse({'status': True, 'devices': done, 'new_caps': new_total})
+
     # batch_confirm 不需要 uid，提前返回
     if action == 'batch_confirm':
         """批量确认：合并 pending → capabilities，并为所有已确认能力绑定巡检项。"""
