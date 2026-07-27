@@ -59,6 +59,7 @@ FEATURE_CHOICES = [
     ('security','安全域/策略'),
     ('lacp',    '链路聚合'),
     ('nqa',     'NQA'),
+    ('vpn',     'MPLS/VPN'),
 ]
 
 

@@ -242,7 +242,7 @@ document.getElementById('modal').addEventListener('click',function(e){if(e.targe
   document.querySelectorAll('.tb tbody tr').forEach(function(tr){
     feat.add(tr.dataset.feature); ckr.add(tr.dataset.checker);
   });
-  var labels={base:'基础',ospf:'OSPF',bgp:'BGP',vrrp:'VRRP',irf:'IRF','m-lag':'M-LAG',rbm:'RBM',security:'安全域',lacp:'链路聚合',nqa:'NQA'};
+  var labels={base:'基础',ospf:'OSPF',bgp:'BGP',vrrp:'VRRP',irf:'IRF','m-lag':'M-LAG',rbm:'RBM',security:'安全域',lacp:'链路聚合',nqa:'NQA',vpn:'MPLS/VPN'};
   var clabels={baseline:'基线对比',threshold:'阈值判断',count:'关键字计数',contains:'包含检查',custom:'自定义函数'};
   function fill(id,vals,lbls,title){
     var s=document.getElementById(id),h='<option value="">'+title+' - 全部</option>';

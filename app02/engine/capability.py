@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 INCLUDE_TOKENS = [
     'ospf', 'bgp', 'vrrp', 'irf', 'm-lag',
     'remote-backup-group', 'security-zone', 'link-aggregation', 'lacp', 'zone',
-    'nqa',
+    'nqa', 'vpn-instance',
 ]
 PROBE_COMMAND = 'display current-configuration | include ' + '|'.join(INCLUDE_TOKENS)
 
@@ -43,6 +43,7 @@ FEATURE_KEYWORDS = {
     'security': [r'security-zone'],
     'lacp':     [r'link-aggregation'],
     'nqa':      [r'^\s*nqa\s+'],
+    'vpn':      [r'ip\s+vpn-instance'],
 }
 
 
