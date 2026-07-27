@@ -4,13 +4,13 @@ import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.db import close_old_connections
 from django.db.models import Q
-from django.db.utils import OperationalError
 from app02.models import (
     NewDevice, CheckItem, CheckSet, CheckResult,
-    AnomalyRecord, XunjianRecord, XunjianTask, DeviceParseResult, InspectionGap
+    XunjianRecord, XunjianTask, InspectionGap
 )
 from app02.engine.device_session import DeviceSession, _build_conn_kwargs
 from app02.engine.item_runner import ItemRunner
+from app02.engine.result_recorder import ResultRecorder
 from app02.parsers import SCHEMA_VERSION
 from app02.engine.reporter import (
     XunjianReport, DeviceReport, CheckItemReport,
@@ -23,59 +23,6 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════
 # 落库辅助（带 OperationalError 重试，避免 MySQL 连接超时导致整条设备巡检中断）
 # ═══════════════════════════════════════════════════════════
-
-def _db_create_with_retry(create_fn, max_retries=2):
-    """执行 create_fn() 创建 DB 记录。
-
-    OperationalError 时关闭旧连接并重试（最多 max_retries 次）。
-    返回 True 表示创建成功，False 表示重试耗尽。
-    非 OperationalError 异常向上传播。
-    """
-    for attempt in range(max_retries):
-        try:
-            create_fn()
-            return True
-        except OperationalError:
-            if attempt < max_retries - 1:
-                try:
-                    close_old_connections()
-                except Exception:
-                    pass
-    return False
-
-
-def _safe_create_check_result(xunjian_time: str, device_name: str, command: str, result) -> bool:
-    """写一条命令结果；遇 MySQL 连接超时会关闭旧连接重试一次。返回是否成功。"""
-    result = result if isinstance(result, str) else (str(result) if result is not None else '')
-    ok = _db_create_with_retry(
-        lambda: CheckResult.objects.create(
-            time=xunjian_time, device=device_name, command=command, result=result
-        )
-    )
-    if not ok:
-        logger.error(f'[{device_name}] CheckResult 落库失败({command})')
-    return ok
-
-
-def _safe_create_anomaly(xunjian_time: str, device_name: str, command: str,
-                         notes: str, severity: str,
-                         baseline_val: str = '', current_val: str = '') -> None:
-    """写一条异常记录；遇 MySQL 连接超时重建连接重试一次。"""
-    try:
-        ok = _db_create_with_retry(
-            lambda: AnomalyRecord.objects.create(
-                time=xunjian_time, device=device_name, command=command,
-                notes=(notes or '')[:190], confirm=False,
-                baseline_val=(baseline_val or '')[:500],
-                current_val=(current_val or '')[:500],
-                severity=severity or 'P2',
-            )
-        )
-        if not ok:
-            logger.error(f'[{device_name}] AnomalyRecord 落库失败({command})')
-    except Exception as e:
-        logger.error(f'[{device_name}] AnomalyRecord 落库失败({command}): {e}')
-
 
 def _get_items_for_device(device):
     """决定该设备执行哪些巡检项（v3 opt-in 能力感知门控）。
@@ -209,32 +156,10 @@ def _xunjian_one_device(
         dev_report.status = 'failed'
         dev_report.connect_error = str(e)
         dev_report.total = len(actual_items)
-        CheckResult.objects.create(
-            time=xunjian_time,
-            device=device.name,
-            command='SSH连接',
-            result=f'连接失败: {e}',
+        ResultRecorder.record_connection_failure(xunjian_time, device.name, str(e))
+        ResultRecorder.record_bulk_connection_failure(
+            xunjian_time, device.name, str(e), actual_items
         )
-        try:
-            AnomalyRecord.objects.create(
-                time=xunjian_time, device=device.name,
-                command='SSH连接', notes=f'连接失败: {e}'[:190], confirm=False,
-                severity='P1',
-            )
-        except Exception as db_e:
-            logger.error(f'[{device.name}] 写入异常记录失败: {db_e}')
-        # 连接失败 -> 该设备其余分配的巡检项都不会执行。批量落 CheckResult，
-        # 避免历史回显「凭空少了一堆命令」且看不出哪些没巡检到。
-        try:
-            CheckResult.objects.bulk_create([
-                CheckResult(
-                    time=xunjian_time, device=device.name, command=it.command,
-                    result=f'未执行（连接失败）：{e}',
-                )
-                for it in actual_items
-            ])
-        except Exception:
-            pass
         return dev_report
 
     # 逐项执行（每个巡检项独立 try，单项异常绝不中断其余项；且保证每条命令都落一条 CheckResult）
@@ -253,43 +178,26 @@ def _xunjian_one_device(
             baseline_map = {}
 
     runner = ItemRunner(connection, device.name, device.extra or {})
+    recorder = ResultRecorder(xunjian_time, device.name)
     for item in actual_items:
         baseline_result = baseline_map.get(item.command, '')
         result = runner.run_one(item, xunjian_time, baseline_result)
         dev_report.total += 1
 
-        # 无论成功/失败/空输出，都落一条 CheckResult
-        # 阶段二·采集时一次解析结果也随落库
-        _safe_create_check_result(
-            xunjian_time, device.name, item.command,
-            result.raw if result.raw else (result.notes or '采集失败（无输出）')
-        )
-        if result.raw and result.structured is not None:
-            try:
-                DeviceParseResult.objects.update_or_create(
-                    device=device.name,
-                    command=item.command,
-                    collected_at=xunjian_time,
-                    defaults=dict(
-                        schema_version=SCHEMA_VERSION,
-                        data=result.structured,
-                    ),
-                )
-            except Exception as dpe:
-                logger.warning(f'[{device.name}] 结构化结果落库失败({item.command}): {dpe}')
+        # 落库：CheckResult（始终）+ DeviceParseResult（当有结构化结果时）
+        raw_text = result.raw if result.raw else (result.notes or '采集失败（无输出）')
+        recorder.record_command(item.command, raw_text)
+        recorder.record_parse(item.command, result.raw, result.structured)
 
-        # 三种情况分支：空输出 / 正常 / 异常
+        # 报告：三种情况分支
         if not result.raw:
             item_report = CheckItemReport(
-                command=item.command,
-                desc=item.name,
-                status='error',
-                notes=result.notes or '采集为空，请检查',
+                command=item.command, desc=item.name,
+                status='error', notes=result.notes or '采集为空，请检查',
             )
             dev_report.items.append(item_report)
             dev_report.anomaly_count += 1
-            _safe_create_anomaly(xunjian_time, device.name, item.command,
-                                 item_report.notes or '', item.severity)
+            recorder.record_anomaly(item.command, item_report.notes or '', item.severity)
 
         elif result.is_ok:
             dev_report.ok_count += 1
@@ -302,21 +210,18 @@ def _xunjian_one_device(
                 result.raw, baseline_result
             )
             item_report = CheckItemReport(
-                command=item.command,
-                desc=item.name,
-                status='anomaly',
-                notes=result.notes,
-                baseline_val=baseline_summary,
-                current_val=current_summary,
+                command=item.command, desc=item.name,
+                status='anomaly', notes=result.notes,
+                baseline_val=baseline_summary, current_val=current_summary,
                 diff_lines=diff_lines,
             )
             dev_report.items.append(item_report)
             dev_report.anomaly_count += 1
-
-            _safe_create_anomaly(xunjian_time, device.name, item.command,
-                                 result.notes or '', item.severity,
-                                 baseline_val=baseline_summary[:500] if baseline_summary else '',
-                                 current_val=current_summary[:500] if current_summary else '')
+            recorder.record_anomaly(
+                item.command, result.notes or '', item.severity,
+                baseline_val=baseline_summary[:500] if baseline_summary else '',
+                current_val=current_summary[:500] if current_summary else '',
+            )
             logger.warning(f'[{device.name}] {item.command} 异常: {result.notes}')
 
     session.disconnect(connection)
