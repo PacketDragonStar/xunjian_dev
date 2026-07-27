@@ -291,6 +291,55 @@ def check_ospf_peer(parsed, baseline, cfg, extra):
     return True, ''
 
 
+@register_checker('check_ospf_baseline')
+def check_ospf_baseline(parsed, baseline, cfg, extra):
+    """OSPF 基线对比：屏蔽 Dead-Time 动态字段后全量对比。
+
+    归一化 Dead-Time（替换为固定值 99），避免每次巡检 Dead-Time 递减导致误报。
+    然后对 neighbor 行做 difflib 对比。
+
+    checker_config:
+        similarity: 一致度阈值（默认 1.0）
+    """
+    import difflib
+
+    def _normalize(text):
+        """归一化 OSPF peer 输出：去掉 Dead-Time 表头行，替换 Dead-Time 数值。"""
+        if not text:
+            return ''
+        lines = []
+        for line in text.splitlines():
+            # 跳过表头行
+            if 'Dead-Time' in line:
+                continue
+            # 替换 Dead-Time 列：数字(空格)数字(空格+Full/Init/…) → 数字 99 State..
+            # 格式: RouterID  Address  Pri  Dead-Time  State  Interface
+            line = re.sub(
+                r'(\d+)\s+(\d+)\s+(Full|Init|Down|Exchange|Loading|ExStart|2-Way)',
+                r'\1  99  \3', line
+            )
+            lines.append(line)
+        return '\n'.join(lines)
+
+    t1 = _normalize(parsed or '')
+    t2 = _normalize(baseline or '')
+
+    if not t1:
+        return False, 'OSPF 输出为空'
+    if not t2:
+        return False, '基线不存在，请先设置基线'
+
+    # 合并空白后对比
+    n1 = re.sub(r'\s+', ' ', t1).strip()
+    n2 = re.sub(r'\s+', ' ', t2).strip()
+    ratio = difflib.SequenceMatcher(None, n1, n2).ratio()
+    similarity = float((cfg or {}).get('similarity', 1.0))
+
+    if ratio >= similarity:
+        return True, ''
+    return False, f'OSPF 邻居信息与基线不一致（相似度 {ratio:.1%}）'
+
+
 @register_checker('check_bgp_peer')
 def check_bgp_peer(parsed, baseline, cfg, extra):
     """BGP邻居检查：统计 Established 状态邻居数，与期望值对比。
