@@ -46,6 +46,7 @@ body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif
       </form>
       <button class="btn btn-primary btn-sm" onclick="openAdd()">+ 新增设备</button>
       <a href="/new/import/" class="btn btn-default btn-sm">&#8659; AI批量导入</a>
+      <button class="btn btn-warning btn-sm" onclick="batchConfirm()">批量确认能力</button>
     </div>
   </div>
   <div class="tb">
@@ -309,6 +310,17 @@ function confirmCap(id){
       alert('已确认！绑定'+res.check_items_added+'个巡检项');
       location.reload();
     }else{alert('确认失败：'+res.error);}
+  });
+}
+function batchConfirm(){
+  if(!confirm('批量确认所有设备的待确认能力？\n将自动绑定对应的巡检项到设备分组。'))return;
+  var fd=new FormData();fd.append('uid','0');fd.append('action','batch_confirm');
+  fetch('/new/device/capability/',{method:'POST',body:fd,headers:{'X-CSRFToken':gck('csrftoken')}})
+  .then(r=>r.json()).then(function(res){
+    if(res.status){
+      alert('完成！确认'+res.devices+'台设备，绑定'+res.items_added+'个巡检项');
+      location.reload();
+    }else{alert('失败：'+res.error);}
   });
 }
 document.getElementById('modal-items').addEventListener('click',function(e){if(e.target===this)closeItems();});

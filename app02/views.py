@@ -792,6 +792,30 @@ def new_device_capability(request):
         return JsonResponse({'status': True, 'caps': extra['capabilities'],
                              'check_items_added': added})
 
+    if action == 'batch_confirm':
+        """批量确认所有设备的 pending 能力。"""
+        qs = NewDevice.objects.filter(enabled=True)
+        done = 0
+        items_added = 0
+        for dev in qs:
+            extra = dict(dev.extra or {})
+            pending = extra.pop('pending_capabilities', None) or []
+            if not pending:
+                continue
+            existing = set(extra.get('capabilities') or [])
+            extra['capabilities'] = list(existing | set(pending))
+            dev.extra = extra
+            dev.save(update_fields=['extra'])
+            if dev.group:
+                to_add = CheckItem.objects.filter(
+                    enabled=True, feature__in=pending
+                ).exclude(id__in=dev.group.check_items.values_list('id', flat=True))
+                if to_add.exists():
+                    dev.group.check_items.add(*to_add)
+                    items_added += to_add.count()
+            done += 1
+        return JsonResponse({'status': True, 'devices': done, 'items_added': items_added})
+
     if action == 'dismiss':
         """关闭能力提示。"""
         extra = dict(obj.extra or {})
