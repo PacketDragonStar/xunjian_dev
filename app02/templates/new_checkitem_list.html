@@ -44,12 +44,44 @@ body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif
       <a href="/new/import/" class="btn btn-default btn-sm">&#8659; AI批量导入</a>
     </div>
   </div>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+    <span style="font-size:.78rem;color:#57606a;font-weight:600;">筛选：</span>
+    <select id="fl-feature" onchange="doFilter()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
+      <option value="">能力标签 - 全部</option>
+      <option value="base">基础</option>
+      <option value="ospf">OSPF</option>
+      <option value="bgp">BGP</option>
+      <option value="vrrp">VRRP</option>
+      <option value="irf">IRF</option>
+      <option value="m-lag">M-LAG</option>
+      <option value="rbm">RBM</option>
+      <option value="security">安全域/策略</option>
+      <option value="lacp">链路聚合</option>
+      <option value="nqa">NQA</option>
+    </select>
+    <select id="fl-checker" onchange="doFilter()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
+      <option value="">检查器 - 全部</option>
+      <option value="baseline">基线对比</option>
+      <option value="threshold">阈值判断</option>
+      <option value="count">关键字计数</option>
+      <option value="contains">包含检查</option>
+      <option value="custom">自定义函数</option>
+    </select>
+    <select id="fl-enabled" onchange="doFilter()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
+      <option value="">状态 - 全部</option>
+      <option value="1">启用</option>
+      <option value="0">禁用</option>
+    </select>
+    <input id="fl-q" placeholder="搜索名称/命令..." oninput="doFilter()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 10px;width:180px;">
+    <button class="cap-xa" onclick="clearFilter()">清除筛选</button>
+    <span id="fl-count" style="font-size:.78rem;color:#8c959f;"></span>
+  </div>
   <div class="tb">
     <table class="table table-hover">
       <thead><tr><th>名称</th><th>命令</th><th>能力标签</th><th>解析器</th><th>检查器</th><th>异常提示</th><th>超时</th><th>状态</th><th>操作</th></tr></thead>
       <tbody>
       {% for item in queryset %}
-      <tr>
+      <tr data-feature="{{ item.feature }}" data-checker="{{ item.checker }}" data-enabled="{{ item.enabled|yesno:'1,0' }}" data-text="{{ item.name|lower }} {{ item.command|lower }}">
         <td><strong style="font-size:.87rem;">{{ item.name }}</strong></td>
         <td><code style="font-size:.79rem;">{{ item.command }}</code></td>
         <td>{% if item.feature == 'base' %}<span class="bk bk-gray">基础</span>{% else %}<span class="bk bk-b">{{ item.get_feature_display }}</span>{% endif %}</td>
@@ -223,5 +255,31 @@ function doSave(){
   });
 }
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeM();});
+
+// ── 筛选 ──
+function doFilter(){
+  var feat=document.getElementById('fl-feature').value;
+  var ckr=document.getElementById('fl-checker').value;
+  var en=document.getElementById('fl-enabled').value;
+  var q=(document.getElementById('fl-q').value||'').toLowerCase();
+  var count=0;
+  document.querySelectorAll('.tb tbody tr').forEach(function(tr){
+    var show=true;
+    if(feat && tr.dataset.feature!==feat)show=false;
+    if(ckr && tr.dataset.checker!==ckr)show=false;
+    if(en && tr.dataset.enabled!==en)show=false;
+    if(q && tr.dataset.text.indexOf(q)===-1)show=false;
+    tr.style.display=show?'':'none';
+    if(show)count++;
+  });
+  document.getElementById('fl-count').textContent='显示 '+count+' 项';
+}
+function clearFilter(){
+  document.getElementById('fl-feature').value='';
+  document.getElementById('fl-checker').value='';
+  document.getElementById('fl-enabled').value='';
+  document.getElementById('fl-q').value='';
+  doFilter();
+}
 </script>
 {% endblock %}
