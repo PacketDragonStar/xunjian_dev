@@ -815,8 +815,8 @@ def check_system_stable(parsed, baseline, cfg, extra):
         return False, '系统稳定状态输出为空（采集失败）'
     if not re.search(r'System state\s*:\s*Stable', text):
         return False, '系统状态不是 Stable'
-    if not re.search(r'Redundancy state\s*:\s*Stable', text):
-        return False, '冗余状态不是 Stable'
+    if not re.search(r'Redundancy state\s*:\s*(Stable|No redundancy)', text):
+        return False, '冗余状态异常'
     unstable = re.findall(r'\b(\d+)\s+(\d+)\s+(\d+)\s+\w+\s+(Fault|Abnormal|Failure)', text)
     if unstable:
         slots = [m[0] for m in unstable]
