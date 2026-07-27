@@ -46,33 +46,13 @@ body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif
   </div>
   <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
     <span style="font-size:.78rem;color:#57606a;font-weight:600;">筛选：</span>
-    <select id="fl-feature" onchange="doFilter()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
-      <option value="">能力标签 - 全部</option>
-      <option value="base">基础</option>
-      <option value="ospf">OSPF</option>
-      <option value="bgp">BGP</option>
-      <option value="vrrp">VRRP</option>
-      <option value="irf">IRF</option>
-      <option value="m-lag">M-LAG</option>
-      <option value="rbm">RBM</option>
-      <option value="security">安全域/策略</option>
-      <option value="lacp">链路聚合</option>
-      <option value="nqa">NQA</option>
-    </select>
-    <select id="fl-checker" onchange="doFilter()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
-      <option value="">检查器 - 全部</option>
-      <option value="baseline">基线对比</option>
-      <option value="threshold">阈值判断</option>
-      <option value="count">关键字计数</option>
-      <option value="contains">包含检查</option>
-      <option value="custom">自定义函数</option>
-    </select>
+    <select id="fl-feature" onchange="doFilter()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;"></select>
+    <select id="fl-checker" onchange="doFilter()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;"></select>
     <select id="fl-enabled" onchange="doFilter()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
       <option value="">状态 - 全部</option>
       <option value="1">启用</option>
       <option value="0">禁用</option>
     </select>
-    <input id="fl-q" placeholder="搜索名称/命令..." oninput="doFilter()" style="font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 10px;width:180px;">
     <button class="cap-xa" onclick="clearFilter()">清除筛选</button>
     <span id="fl-count" style="font-size:.78rem;color:#8c959f;"></span>
   </div>
@@ -257,18 +237,32 @@ function doSave(){
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeM();});
 
 // ── 筛选 ──
+(function initFilters(){
+  var feat=new Set(), ckr=new Set();
+  document.querySelectorAll('.tb tbody tr').forEach(function(tr){
+    feat.add(tr.dataset.feature); ckr.add(tr.dataset.checker);
+  });
+  var labels={base:'基础',ospf:'OSPF',bgp:'BGP',vrrp:'VRRP',irf:'IRF','m-lag':'M-LAG',rbm:'RBM',security:'安全域',lacp:'链路聚合',nqa:'NQA'};
+  var clabels={baseline:'基线对比',threshold:'阈值判断',count:'关键字计数',contains:'包含检查',custom:'自定义函数'};
+  function fill(id,vals,lbls,title){
+    var s=document.getElementById(id),h='<option value="">'+title+' - 全部</option>';
+    [].concat([...vals]).sort().forEach(function(v){h+='<option value="'+v+'">'+v+' ('+(lbls[v]||v)+')</option>';});
+    s.innerHTML=h;
+  }
+  fill('fl-feature',feat,labels,'能力标签');
+  fill('fl-checker',ckr,clabels,'检查器');
+})();
+
 function doFilter(){
   var feat=document.getElementById('fl-feature').value;
   var ckr=document.getElementById('fl-checker').value;
   var en=document.getElementById('fl-enabled').value;
-  var q=(document.getElementById('fl-q').value||'').toLowerCase();
   var count=0;
   document.querySelectorAll('.tb tbody tr').forEach(function(tr){
     var show=true;
     if(feat && tr.dataset.feature!==feat)show=false;
     if(ckr && tr.dataset.checker!==ckr)show=false;
     if(en && tr.dataset.enabled!==en)show=false;
-    if(q && tr.dataset.text.indexOf(q)===-1)show=false;
     tr.style.display=show?'':'none';
     if(show)count++;
   });
@@ -278,7 +272,6 @@ function clearFilter(){
   document.getElementById('fl-feature').value='';
   document.getElementById('fl-checker').value='';
   document.getElementById('fl-enabled').value='';
-  document.getElementById('fl-q').value='';
   doFilter();
 }
 </script>
