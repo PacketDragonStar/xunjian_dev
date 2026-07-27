@@ -15,7 +15,9 @@ body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif
 .xr:hover{background:#fff0f0;}
 .bk-g{background:#dafbe1;color:#1a7f37;padding:2px 8px;border-radius:20px;font-size:.74rem;font-weight:600;}
 .bk-gray{background:#f3f4f6;color:#57606a;padding:2px 8px;border-radius:20px;font-size:.74rem;font-weight:600;}
-.cap-b{display:inline-block;background:#eef2ff;color:#3b5bdb;padding:1px 7px;border-radius:20px;font-size:.7rem;font-weight:600;margin:1px 2px 1px 0;}
+.cap-b{display:inline-block;padding:1px 7px;border-radius:20px;font-size:.7rem;font-weight:600;margin:1px 2px 1px 0;}
+.cap-done{background:#dafbe1;color:#1a7f37;}
+.cap-pend{background:#fef3c7;color:#92400e;}
 .cap-muted{color:#8c959f;font-size:.74rem;}
 .cap-xa{font-size:.7rem;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:transparent;color:#57606a;cursor:pointer;margin-right:3px;}
 .cap-xa:hover{background:#f6f8fa;}
@@ -67,10 +69,11 @@ body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif
             {% if dev.caps_none %}
               <span class="cap-muted">未检测</span>
             {% elif dev.caps_list %}
-              {% for c in dev.caps_list %}<span class="cap-b">{{ c }}</span>{% endfor %}
+              {% for c in dev.caps_list %}<span class="cap-b cap-done">{{ c }}</span>{% endfor %}
             {% else %}
               <span class="cap-muted">无特性</span>
             {% endif %}
+            {% for c in dev.pending_list %}<span class="cap-b cap-pend">{{ c }}</span>{% endfor %}
           </div>
           <div style="margin-top:5px;">
             <button class="cap-xa" id="btn-disc-{{ dev.id }}" onclick="discoverCap({{ dev.id }})">检测能力</button>
@@ -196,12 +199,13 @@ function openEdit(id){
 function clrF(){['f-name','f-ip','f-user','f-pwd'].forEach(function(i){document.getElementById(i).value='';});document.getElementById('f-dtype').value='huawei';document.getElementById('f-group').value='';document.getElementById('f-extra').value='{}';document.getElementById('f-enabled').value='true';}
 function closeM(){document.getElementById('modal').classList.remove('show');}
 function gck(n){var v=document.cookie.match('(^|;) ?'+n+'=([^;]*)(;|$)');return v?v[2]:null;}
-function capBadges(caps){
+function capBadges(caps,cls){
+  cls=cls||'cap-done';
   if(caps===null||caps===undefined)return '<span class="cap-muted">未检测</span>';
   if(!caps.length)return '<span class="cap-muted">无特性</span>';
-  return caps.map(function(c){return '<span class="cap-b">'+c+'</span>';}).join('');
+  return caps.map(function(c){return '<span class="cap-b '+cls+'">'+c+'</span>';}).join('');
 }
-function capBadge(c,cls){return '<span class="cap-b" style="background:'+cls+'">'+c+'</span>';}
+function capBadge(c,cls){return '<span class="cap-b '+cls+'">'+c+'</span>';}
 function discoverCap(id){
   var btn=document.getElementById('btn-disc-'+id);
   btn.classList.add('busy');btn.textContent='检测中…';
@@ -210,12 +214,11 @@ function discoverCap(id){
     btn.classList.remove('busy');btn.textContent='检测能力';
     if(res.status){
       var h='';
-      if(res.confirmed&&res.confirmed.length) h+=res.confirmed.map(function(c){return capBadge(c,'#dafbe1;color:#1a7f37');}).join('');
-      if(res.pending&&res.pending.length) h+=res.pending.map(function(c){return capBadge(c,'#fef3c7;color:#92400e');}).join('');
-      if(res.new&&res.new.length) h+=res.new.map(function(c){return capBadge(c,'#e0f2fe;color:#0369a1');}).join(' ');
+      if(res.confirmed&&res.confirmed.length) h+=capBadges(res.confirmed,'cap-done');
+      if(res.pending&&res.pending.length) h+=capBadges(res.pending,'cap-pend');
       document.getElementById('caps-'+id).innerHTML=h||'<span class="cap-muted">无特性</span>';
       if(res.new&&res.new.length){
-        alert('发现新能力: '+res.new.join(', ')+'。请在下方点「确认能力」启用。');
+        alert('发现新能力: '+res.new.join(', ')+'。请点「确认能力」启用。');
       }
     }else{alert('检测失败：'+res.error);}
   }).catch(function(e){btn.classList.remove('busy');btn.textContent='检测能力';alert('请求异常：'+e);});
