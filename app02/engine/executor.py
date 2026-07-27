@@ -46,26 +46,37 @@ def _normalize_device_type(device_type: str) -> str:
 # 落库辅助（带 OperationalError 重试，避免 MySQL 连接超时导致整条设备巡检中断）
 # ═══════════════════════════════════════════════════════════
 
+def _db_create_with_retry(create_fn, max_retries=2):
+    """执行 create_fn() 创建 DB 记录。
+
+    OperationalError 时关闭旧连接并重试（最多 max_retries 次）。
+    返回 True 表示创建成功，False 表示重试耗尽。
+    非 OperationalError 异常向上传播。
+    """
+    for attempt in range(max_retries):
+        try:
+            create_fn()
+            return True
+        except OperationalError:
+            if attempt < max_retries - 1:
+                try:
+                    close_old_connections()
+                except Exception:
+                    pass
+    return False
+
+
 def _safe_create_check_result(xunjian_time: str, device_name: str, command: str, result) -> bool:
     """写一条命令结果；遇 MySQL 连接超时会关闭旧连接重试一次。返回是否成功。"""
     result = result if isinstance(result, str) else (str(result) if result is not None else '')
-    for _ in range(2):
-        try:
-            CheckResult.objects.create(
-                time=xunjian_time, device=device_name, command=command, result=result
-            )
-            return True
-        except OperationalError:
-            # 连接可能已被服务端断开（长时间采集后空闲超时），重建后再试
-            try:
-                close_old_connections()
-            except Exception:
-                pass
-        except Exception as e:
-            logger.error(f'[{device_name}] CheckResult 落库失败({command}): {e}')
-            return False
-    logger.error(f'[{device_name}] CheckResult 落库重试仍失败({command})')
-    return False
+    ok = _db_create_with_retry(
+        lambda: CheckResult.objects.create(
+            time=xunjian_time, device=device_name, command=command, result=result
+        )
+    )
+    if not ok:
+        logger.error(f'[{device_name}] CheckResult 落库失败({command})')
+    return ok
 
 
 def _safe_create_anomaly(xunjian_time: str, device_name: str, command: str,
@@ -73,27 +84,19 @@ def _safe_create_anomaly(xunjian_time: str, device_name: str, command: str,
                          baseline_val: str = '', current_val: str = '') -> None:
     """写一条异常记录；遇 MySQL 连接超时重建连接重试一次。"""
     try:
-        for _ in range(2):
-            try:
-                AnomalyRecord.objects.create(
-                    time=xunjian_time, device=device_name, command=command,
-                    notes=(notes or '')[:190], confirm=False,
-                    baseline_val=(baseline_val or '')[:500],
-                    current_val=(current_val or '')[:500],
-                    severity=severity or 'P2',
-                )
-                return
-            except OperationalError:
-                try:
-                    close_old_connections()
-                except Exception:
-                    pass
-            except Exception as e:
-                logger.error(f'[{device_name}] AnomalyRecord 落库失败({command}): {e}')
-                return
-        logger.error(f'[{device_name}] AnomalyRecord 落库重试仍失败({command})')
-    except Exception:
-        pass
+        ok = _db_create_with_retry(
+            lambda: AnomalyRecord.objects.create(
+                time=xunjian_time, device=device_name, command=command,
+                notes=(notes or '')[:190], confirm=False,
+                baseline_val=(baseline_val or '')[:500],
+                current_val=(current_val or '')[:500],
+                severity=severity or 'P2',
+            )
+        )
+        if not ok:
+            logger.error(f'[{device_name}] AnomalyRecord 落库失败({command})')
+    except Exception as e:
+        logger.error(f'[{device_name}] AnomalyRecord 落库失败({command}): {e}')
 
 
 def _get_items_for_device(device):
