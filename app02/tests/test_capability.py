@@ -92,11 +92,25 @@ class DetectCapabilitiesTest(unittest.TestCase):
             'ospf': 'ospf', 'bgp': 'bgp', 'vrrp': 'vrrp', 'irf': 'irf',
             'm-lag': 'm-lag', 'rbm': 'remote-backup-group',
             'security': 'security-zone', 'lacp': 'link-aggregation',
+            'nqa': 'nqa',
         }
         for feat, token in primary.items():
             self.assertIn(token, cap.PROBE_COMMAND,
                           f'feature {feat} 的主 token "{token}" 不在 PROBE_COMMAND 中')
             self.assertIn(token, cap.INCLUDE_TOKENS)
+
+    def test_firewall_false_positives(self):
+        # 防火墙配置中引用了协议名（ACL 规则名/对象组），但未实际配置该协议
+        fw_config = """
+#
+ rule 10 name ospf_to_trust
+ rule 20 name bgp_monitor
+ object-group ip address ospf_peers
+#
+"""
+        caps = cap.detect_capabilities(fw_config)
+        self.assertEqual(caps, [],
+                         msg='ACL 规则名含 ospf/bgp 不应被误判为配置了 OSPF/BGP')
 
 
 class EnsureCapabilitiesTest(unittest.TestCase):

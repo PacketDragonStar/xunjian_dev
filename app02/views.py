@@ -821,6 +821,27 @@ def new_device_capability(request):
                 for it in qs.order_by('feature', 'command')[:200]]
         return JsonResponse({'status': True, 'items': data})
 
+    if action == 'bound_items':
+        """查看设备所在分组已绑定的巡检项列表。"""
+        if not obj.group:
+            return JsonResponse({'status': False, 'error': '该设备未绑定分组'})
+        items = obj.group.check_items.filter(enabled=True).order_by('feature', 'command')
+        data = [{'id': it.id, 'name': it.name, 'command': it.command,
+                 'feature': it.feature, 'checker': it.checker}
+                for it in items]
+        return JsonResponse({'status': True, 'items': data, 'group': obj.group.name})
+
+    if action == 'unlink_items':
+        """从设备所在分组移除指定巡检项。"""
+        item_ids = request.POST.getlist('item_ids')
+        if not obj.group:
+            return JsonResponse({'status': False, 'error': '该设备未绑定分组'})
+        if item_ids:
+            qs = CheckItem.objects.filter(id__in=item_ids)
+            obj.group.check_items.remove(*qs)
+            return JsonResponse({'status': True, 'removed': qs.count()})
+        return JsonResponse({'status': False, 'error': '缺少 item_ids'})
+
     if action in ('toggle', 'set'):
         on = True if action == 'toggle' \
             else str(request.POST.get('on', '1')).lower() in ('1', 'true', 'on')

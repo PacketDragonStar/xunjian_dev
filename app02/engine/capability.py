@@ -31,15 +31,18 @@ CAP_STALE_DAYS = 7
 #   vrrp 严禁 vrid（不在 include 中）；
 #   lacp 弃用 BAGG（用 link-aggregation 主 token + lacp 兜底）。
 FEATURE_KEYWORDS = {
-    'ospf':     [r'\bospf\b'],
-    'bgp':      [r'\bbgp\b'],
-    'vrrp':     [r'\bvrrp\b'],
-    'irf':      [r'\birf\b', r'\bmember\b'],
-    'm-lag':    [r'\bm-lag\b'],
+    # 协议配置行的精确匹配：避免 ACL 规则名/对象组名中的协议关键词误判。
+    # ^ospf\s+\d+  = 行首 ospf 后跟空格+进程号 → 真实 OSPF 配置
+    # ^bgp\s+\d+   = 行首 bgp 后跟 AS 号 → 真实 BGP 配置
+    'ospf':     [r'^ospf\s+\d+'],
+    'bgp':      [r'^bgp\s+\d+'],
+    'vrrp':     [r'vrrp\s+vrid'],
+    'irf':      [r'^\s*irf\s+member'],
+    'm-lag':    [r'^\s*m-lag\s+'],
     'rbm':      [r'remote-backup-group'],
-    'security': [r'security-zone', r'\bzone\b'],
-    'lacp':     [r'link-aggregation', r'\blacp\b'],
-    'nqa':      [r'\bnqa\b'],
+    'security': [r'security-zone'],
+    'lacp':     [r'link-aggregation'],
+    'nqa':      [r'^\s*nqa\s+'],
 }
 
 
@@ -63,7 +66,7 @@ def detect_capabilities(raw):
         return []
     caps = []
     for feat, pats in FEATURE_KEYWORDS.items():
-        if any(re.search(p, raw, re.I) for p in pats):
+        if any(re.search(p, raw, re.I | re.M) for p in pats):
             caps.append(feat)
     return caps
 
