@@ -58,6 +58,7 @@ FEATURE_CHOICES = [
     ('rbm',     'RBM'),
     ('security','安全域/策略'),
     ('lacp',    '链路聚合'),
+    ('nqa',     'NQA'),
 ]
 
 

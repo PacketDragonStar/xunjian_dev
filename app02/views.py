@@ -772,14 +772,24 @@ def new_device_capability(request):
         return JsonResponse({'status': True, 'pending': pending})
 
     if action == 'confirm':
-        """确认选中的 pending 能力，移到 capabilities。"""
+        """确认选中的 pending 能力：移到 capabilities，并自动绑定对应巡检项到设备分组。"""
         extra = dict(obj.extra or {})
         pending = extra.pop('pending_capabilities', None) or []
         existing = set(extra.get('capabilities') or [])
         extra['capabilities'] = list(existing | set(pending))
         obj.extra = extra
         obj.save(update_fields=['extra'])
-        return JsonResponse({'status': True, 'caps': extra['capabilities']})
+        # 自动将对应 feature 的巡检项绑定到设备所在分组
+        added = 0
+        if pending and obj.group:
+            items_to_add = CheckItem.objects.filter(
+                enabled=True, feature__in=pending
+            ).exclude(id__in=obj.group.check_items.values_list('id', flat=True))
+            if items_to_add.exists():
+                obj.group.check_items.add(*items_to_add)
+                added = items_to_add.count()
+        return JsonResponse({'status': True, 'caps': extra['capabilities'],
+                             'check_items_added': added})
 
     if action == 'dismiss':
         """关闭能力提示。"""
@@ -789,6 +799,27 @@ def new_device_capability(request):
         obj.extra = extra
         obj.save(update_fields=['extra'])
         return JsonResponse({'status': True})
+
+    if action == 'link_items':
+        """从设备页直接给所在分组绑定巡检项。feature 参数可选过滤。"""
+        feature = request.POST.get('feature', '').strip() or None
+        item_ids = request.POST.getlist('item_ids')
+        if not obj.group:
+            return JsonResponse({'status': False, 'error': '该设备未绑定分组'})
+        if item_ids:
+            qs = CheckItem.objects.filter(id__in=item_ids, enabled=True)
+            obj.group.check_items.add(*qs)
+            return JsonResponse({'status': True, 'added': qs.count()})
+        # 无 item_ids 时，列出可添加的巡检项（排除已绑定）
+        qs = CheckItem.objects.filter(enabled=True).exclude(
+            id__in=obj.group.check_items.values_list('id', flat=True)
+        )
+        if feature:
+            qs = qs.filter(feature=feature)
+        data = [{'id': it.id, 'name': it.name, 'command': it.command,
+                 'feature': it.feature}
+                for it in qs.order_by('feature', 'command')[:200]]
+        return JsonResponse({'status': True, 'items': data})
 
     if action in ('toggle', 'set'):
         on = True if action == 'toggle' \
