@@ -9,8 +9,8 @@ from app02.models import (
     NewDevice, CheckItem, CheckSet, CheckResult,
     AnomalyRecord, XunjianRecord, XunjianTask, DeviceParseResult, InspectionGap
 )
-from app02.engine.pipeline import run_check_item
 from app02.engine.device_session import DeviceSession, _build_conn_kwargs
+from app02.engine.item_runner import ItemRunner
 from app02.parsers import SCHEMA_VERSION
 from app02.engine.reporter import (
     XunjianReport, DeviceReport, CheckItemReport,
@@ -252,97 +252,72 @@ def _xunjian_one_device(
         except Exception:
             baseline_map = {}
 
+    runner = ItemRunner(connection, device.name, device.extra or {})
     for item in actual_items:
         baseline_result = baseline_map.get(item.command, '')
-        try:
-            result_raw, is_ok, notes, structured = run_check_item(
-                connection=connection,
-                check_item=item,
-                baseline_result=baseline_result,
-                device_extra=device.extra or {},
-                xunjian_time=xunjian_time,
-                device_name=device.name
-            )
-            dev_report.total += 1
+        result = runner.run_one(item, xunjian_time, baseline_result)
+        dev_report.total += 1
 
-            # 无论成功/失败/空输出，都落一条 CheckResult：保证历史回显条数稳定，
-            # 「未巡检到的项」可见、可追溯。落库失败自动重试（MySQL 连接超时）。
-            _safe_create_check_result(
-                xunjian_time, device.name, item.command,
-                result_raw if result_raw else (notes or '采集失败（无输出）')
-            )
-
-            # 阶段二·采集时一次解析落库（仅当确有 raw 输出且解析成功）
-            if result_raw and structured is not None:
-                try:
-                    DeviceParseResult.objects.update_or_create(
-                        device=device.name,
-                        command=item.command,
-                        collected_at=xunjian_time,
-                        defaults=dict(
-                            schema_version=SCHEMA_VERSION,
-                            data=structured,
-                        ),
-                    )
-                except Exception as dpe:
-                    logger.warning(f'[{device.name}] 结构化结果落库失败({item.command}): {dpe}')
-
-            if not result_raw:
-                item_report = CheckItemReport(
+        # 无论成功/失败/空输出，都落一条 CheckResult
+        # 阶段二·采集时一次解析结果也随落库
+        _safe_create_check_result(
+            xunjian_time, device.name, item.command,
+            result.raw if result.raw else (result.notes or '采集失败（无输出）')
+        )
+        if result.raw and result.structured is not None:
+            try:
+                DeviceParseResult.objects.update_or_create(
+                    device=device.name,
                     command=item.command,
-                    desc=item.name,
-                    status='error',
-                    notes=notes or '采集为空，请检查',
+                    collected_at=xunjian_time,
+                    defaults=dict(
+                        schema_version=SCHEMA_VERSION,
+                        data=result.structured,
+                    ),
                 )
-                dev_report.items.append(item_report)
-                dev_report.anomaly_count += 1
-                _safe_create_anomaly(xunjian_time, device.name, item.command,
-                                     item_report.notes or '', item.severity)
+            except Exception as dpe:
+                logger.warning(f'[{device.name}] 结构化结果落库失败({item.command}): {dpe}')
 
-            elif is_ok:
-                dev_report.ok_count += 1
-                dev_report.items.append(CheckItemReport(
-                    command=item.command, desc=item.name, status='ok'
-                ))
-
-            else:
-                current_summary, baseline_summary, diff_lines = extract_diff_summary(
-                    result_raw, baseline_result
-                )
-                item_report = CheckItemReport(
-                    command=item.command,
-                    desc=item.name,
-                    status='anomaly',
-                    notes=notes,
-                    baseline_val=baseline_summary,
-                    current_val=current_summary,
-                    diff_lines=diff_lines,
-                )
-                dev_report.items.append(item_report)
-                dev_report.anomaly_count += 1
-
-                _safe_create_anomaly(xunjian_time, device.name, item.command,
-                                     notes or '', item.severity,
-                                     baseline_val=baseline_summary[:500] if baseline_summary else '',
-                                     current_val=current_summary[:500] if current_summary else '')
-                logger.warning(f'[{device.name}] {item.command} 异常: {notes}')
-
-        except Exception as item_e:
-            # 单项执行/落库异常：兜底写一条 CheckResult（记录异常原因），保证不丢项、可追责，
-            # 且不影响本设备后续命令继续巡检。
-            logger.error(f'[{device.name}] 命令 {item.command} 执行异常(已兜底记录): {item_e}')
-            dev_report.total += 1
+        # 三种情况分支：空输出 / 正常 / 异常
+        if not result.raw:
+            item_report = CheckItemReport(
+                command=item.command,
+                desc=item.name,
+                status='error',
+                notes=result.notes or '采集为空，请检查',
+            )
+            dev_report.items.append(item_report)
             dev_report.anomaly_count += 1
-            _safe_create_check_result(
-                xunjian_time, device.name, item.command,
-                f'采集/落库异常: {item_e}'[:190]
-            )
             _safe_create_anomaly(xunjian_time, device.name, item.command,
-                                 f'采集/落库异常: {item_e}'[:190], item.severity)
+                                 item_report.notes or '', item.severity)
+
+        elif result.is_ok:
+            dev_report.ok_count += 1
             dev_report.items.append(CheckItemReport(
-                command=item.command, desc=item.name,
-                status='error', notes=f'采集/落库异常: {item_e}'
+                command=item.command, desc=item.name, status='ok'
             ))
+
+        else:
+            current_summary, baseline_summary, diff_lines = extract_diff_summary(
+                result.raw, baseline_result
+            )
+            item_report = CheckItemReport(
+                command=item.command,
+                desc=item.name,
+                status='anomaly',
+                notes=result.notes,
+                baseline_val=baseline_summary,
+                current_val=current_summary,
+                diff_lines=diff_lines,
+            )
+            dev_report.items.append(item_report)
+            dev_report.anomaly_count += 1
+
+            _safe_create_anomaly(xunjian_time, device.name, item.command,
+                                 result.notes or '', item.severity,
+                                 baseline_val=baseline_summary[:500] if baseline_summary else '',
+                                 current_val=current_summary[:500] if current_summary else '')
+            logger.warning(f'[{device.name}] {item.command} 异常: {result.notes}')
 
     session.disconnect(connection)
 
