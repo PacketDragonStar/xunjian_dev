@@ -78,15 +78,9 @@ def new_run_xunjian(request):
             XunjianTask.objects.filter(id=task.id).update(
                 xunjian_time=res['time'], result=res['result'],
             )
-            # 巡检完成后自动同步 CMDB（设备/接口/链路/VLAN/IP/CPU/内存）
-            # 解决「巡检后 CMDB 没更新」：每次巡检结束即把最新采集结果解析进台账。
-            try:
-                from django.core.management import call_command
-                close_old_connections()
-                call_command('sync_cmdb')
-                _new_logger.info(f'巡检后自动同步CMDB完成(task={task.id})')
-            except Exception as e:
-                _new_logger.warning(f'巡检后自动同步CMDB失败(task={task.id}): {e}')
+            # 巡检后 hook pipeline：sync_cmdb / detect_capabilities ...
+            from app02.engine.post_inspection import run_post_inspection_hooks
+            run_post_inspection_hooks(task.id, res['time'], operator)
         except Exception as e:
             close_old_connections()
             XunjianTask.objects.filter(id=task.id).update(
