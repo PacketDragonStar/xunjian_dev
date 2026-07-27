@@ -740,26 +740,29 @@ def new_device_capability(request):
 
     # batch_confirm 不需要 uid，提前返回
     if action == 'batch_confirm':
+        """批量确认：合并 pending → capabilities，并为所有已确认能力绑定巡检项。"""
         qs = NewDevice.objects.filter(enabled=True)
         done = 0
         items_added = 0
         for dev in qs:
             extra = dict(dev.extra or {})
             pending = extra.pop('pending_capabilities', None) or []
-            if not pending:
-                continue
             existing = set(extra.get('capabilities') or [])
-            extra['capabilities'] = list(existing | set(pending))
-            dev.extra = extra
-            dev.save(update_fields=['extra'])
-            if dev.group:
+            if pending:
+                extra['capabilities'] = list(existing | set(pending))
+                dev.extra = extra
+                dev.save(update_fields=['extra'])
+            # 为该设备所有已确认能力绑定对应巡检项（缺失的才补）
+            all_caps = list(existing | set(pending))
+            if all_caps and dev.group:
                 to_add = CheckItem.objects.filter(
-                    enabled=True, feature__in=pending
+                    enabled=True, feature__in=all_caps
                 ).exclude(id__in=dev.group.check_items.values_list('id', flat=True))
                 if to_add.exists():
                     dev.group.check_items.add(*to_add)
                     items_added += to_add.count()
-            done += 1
+            if pending or (all_caps and dev.group):
+                done += 1
         return JsonResponse({'status': True, 'devices': done, 'items_added': items_added})
 
     uid = request.POST.get('uid') or request.GET.get('uid')
