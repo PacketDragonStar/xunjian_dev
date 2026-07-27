@@ -623,6 +623,7 @@ def new_device_list(request):
         d.caps_ts = extra.get('capabilities_ts')
         d.protocol = bool(extra.get('protocol_inspection'))
         d.pending_list = extra.get('pending_capabilities') or []
+        d.bound_count = d.group.check_items.filter(enabled=True).count() if d.group else 0
     return render(request, 'new_device_list.html', {
         'queryset':    devs,
         'page_string': page_obj.html(),

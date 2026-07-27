@@ -75,7 +75,7 @@ body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif
           <div style="margin-top:5px;">
             <button class="cap-xa" id="btn-disc-{{ dev.id }}" onclick="discoverCap({{ dev.id }})">检测能力</button>
             <button class="cap-xa {% if dev.protocol %}on{% endif %}" id="btn-prot-{{ dev.id }}" onclick="toggleProtocol({{ dev.id }})">{% if dev.protocol %}协议开{% else %}协议关{% endif %}</button>
-            <button class="cap-xa" onclick="openItems({{ dev.id }})">巡检项</button>
+            <button class="cap-xa" onclick="openItems({{ dev.id }})">巡检项({{ dev.bound_count|default:0 }})</button>
             {% if dev.pending_list %}
             <button class="cap-xa" style="color:#d97706;border-color:#fbbf24;" onclick="confirmCap({{ dev.id }})">确认能力({{ dev.pending_list|length }})</button>
             {% endif %}
