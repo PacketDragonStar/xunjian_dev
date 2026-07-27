@@ -8,6 +8,10 @@ from django.conf.urls.static import static
 from app02 import views
 
 urlpatterns = [
+    # ── 登录/登出 ──
+    path('login/',  views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+
     # ── Django admin ──
     path('django-admin/', admin.site.urls),
 

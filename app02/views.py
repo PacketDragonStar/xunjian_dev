@@ -25,6 +25,29 @@ base_dir = settings.BASE_DIR
 file_path = os.path.join(base_dir, 'app02', 'static', 'example.xlsx')
 
 
+# ── 登录 ─────────────────────────────────────────────────
+def login_view(request):
+    """用户登录"""
+    from app02.forms import LoginForm
+    if request.method == 'GET':
+        form = LoginForm()
+        return render(request, 'login.html', {'form': form})
+    form = LoginForm(data=request.POST)
+    if form.is_valid():
+        from django.contrib import auth
+        user = auth.authenticate(
+            request,
+            username=form.cleaned_data['username'],
+            password=form.cleaned_data['password'],
+        )
+        if user:
+            auth.login(request, user)
+            request.session['info'] = {'name': user.username, 'id': user.id}
+            return redirect('/')
+        form.add_error(None, '用户名或密码错误')
+    return render(request, 'login.html', {'form': form})
+
+
 
 
 from app02.engine.executor import run_xunjian as _run_xunjian_new
@@ -122,6 +145,15 @@ def new_search_history(request):
         'date_to':     date_to,
         'baseline':    baseline,
     })
+
+
+# ── 登出 ─────────────────────────────────────────────────
+def logout_view(request):
+    """用户登出"""
+    from django.contrib import auth
+    auth.logout(request)
+    request.session.clear()
+    return redirect('/login/')
 
 
 # ── 新版：巡检详情（异常列表）──────────────────────────────
