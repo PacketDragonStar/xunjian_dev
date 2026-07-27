@@ -736,8 +736,33 @@ def new_device_capability(request):
     """
     if request.method != 'POST':
         return JsonResponse({'status': False, 'error': '仅支持POST'})
-    uid = request.POST.get('uid') or request.GET.get('uid')
     action = request.POST.get('action') or request.GET.get('action')
+
+    # batch_confirm 不需要 uid，提前返回
+    if action == 'batch_confirm':
+        qs = NewDevice.objects.filter(enabled=True)
+        done = 0
+        items_added = 0
+        for dev in qs:
+            extra = dict(dev.extra or {})
+            pending = extra.pop('pending_capabilities', None) or []
+            if not pending:
+                continue
+            existing = set(extra.get('capabilities') or [])
+            extra['capabilities'] = list(existing | set(pending))
+            dev.extra = extra
+            dev.save(update_fields=['extra'])
+            if dev.group:
+                to_add = CheckItem.objects.filter(
+                    enabled=True, feature__in=pending
+                ).exclude(id__in=dev.group.check_items.values_list('id', flat=True))
+                if to_add.exists():
+                    dev.group.check_items.add(*to_add)
+                    items_added += to_add.count()
+            done += 1
+        return JsonResponse({'status': True, 'devices': done, 'items_added': items_added})
+
+    uid = request.POST.get('uid') or request.GET.get('uid')
     obj = NewDevice.objects.filter(id=uid).first()
     if not obj:
         return JsonResponse({'status': False, 'error': '设备不存在'})
@@ -791,30 +816,6 @@ def new_device_capability(request):
                 added = items_to_add.count()
         return JsonResponse({'status': True, 'caps': extra['capabilities'],
                              'check_items_added': added})
-
-    if action == 'batch_confirm':
-        """批量确认所有设备的 pending 能力。"""
-        qs = NewDevice.objects.filter(enabled=True)
-        done = 0
-        items_added = 0
-        for dev in qs:
-            extra = dict(dev.extra or {})
-            pending = extra.pop('pending_capabilities', None) or []
-            if not pending:
-                continue
-            existing = set(extra.get('capabilities') or [])
-            extra['capabilities'] = list(existing | set(pending))
-            dev.extra = extra
-            dev.save(update_fields=['extra'])
-            if dev.group:
-                to_add = CheckItem.objects.filter(
-                    enabled=True, feature__in=pending
-                ).exclude(id__in=dev.group.check_items.values_list('id', flat=True))
-                if to_add.exists():
-                    dev.group.check_items.add(*to_add)
-                    items_added += to_add.count()
-            done += 1
-        return JsonResponse({'status': True, 'devices': done, 'items_added': items_added})
 
     if action == 'dismiss':
         """关闭能力提示。"""
