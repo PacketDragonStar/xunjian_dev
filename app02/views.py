@@ -787,8 +787,20 @@ def new_device_capability(request):
                     pass
         if caps is None:
             return JsonResponse({'status': False, 'error': '探测失败（保守按基础项）'})
-        extra = obj.extra or {}
-        return JsonResponse({'status': True, 'caps': caps,
+        # 只把新发现的写入 pending，已确认的不动
+        extra = dict(obj.extra or {})
+        existing = set(extra.get('capabilities') or [])
+        old_pending = set(extra.get('pending_capabilities') or [])
+        new = set(caps) - existing - old_pending
+        if new:
+            extra['pending_capabilities'] = list(old_pending | new)
+            obj.extra = extra
+            obj.save(update_fields=['extra'])
+        return JsonResponse({'status': True,
+                             'caps': caps,
+                             'confirmed': list(existing),
+                             'pending': extra.get('pending_capabilities') or [],
+                             'new': list(new),
                              'protocol': bool(extra.get('protocol_inspection'))})
 
     if action == 'pending':

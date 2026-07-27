@@ -201,6 +201,7 @@ function capBadges(caps){
   if(!caps.length)return '<span class="cap-muted">无特性</span>';
   return caps.map(function(c){return '<span class="cap-b">'+c+'</span>';}).join('');
 }
+function capBadge(c,cls){return '<span class="cap-b" style="background:'+cls+'">'+c+'</span>';}
 function discoverCap(id){
   var btn=document.getElementById('btn-disc-'+id);
   btn.classList.add('busy');btn.textContent='检测中…';
@@ -208,7 +209,14 @@ function discoverCap(id){
   .then(r=>r.json()).then(function(res){
     btn.classList.remove('busy');btn.textContent='检测能力';
     if(res.status){
-      document.getElementById('caps-'+id).innerHTML=capBadges(res.caps);
+      var h='';
+      if(res.confirmed&&res.confirmed.length) h+=res.confirmed.map(function(c){return capBadge(c,'#dafbe1;color:#1a7f37');}).join('');
+      if(res.pending&&res.pending.length) h+=res.pending.map(function(c){return capBadge(c,'#fef3c7;color:#92400e');}).join('');
+      if(res.new&&res.new.length) h+=res.new.map(function(c){return capBadge(c,'#e0f2fe;color:#0369a1');}).join(' ');
+      document.getElementById('caps-'+id).innerHTML=h||'<span class="cap-muted">无特性</span>';
+      if(res.new&&res.new.length){
+        alert('发现新能力: '+res.new.join(', ')+'。请在下方点「确认能力」启用。');
+      }
     }else{alert('检测失败：'+res.error);}
   }).catch(function(e){btn.classList.remove('busy');btn.textContent='检测能力';alert('请求异常：'+e);});
 }
