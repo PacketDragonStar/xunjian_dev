@@ -733,6 +733,31 @@ def new_device_capability(request):
         return JsonResponse({'status': True, 'caps': caps,
                              'protocol': bool(extra.get('protocol_inspection'))})
 
+    if action == 'pending':
+        """查询待确认的能力列表。"""
+        extra = obj.extra or {}
+        pending = extra.get('pending_capabilities') or []
+        return JsonResponse({'status': True, 'pending': pending})
+
+    if action == 'confirm':
+        """确认选中的 pending 能力，移到 capabilities。"""
+        extra = dict(obj.extra or {})
+        pending = extra.pop('pending_capabilities', None) or []
+        existing = set(extra.get('capabilities') or [])
+        extra['capabilities'] = list(existing | set(pending))
+        obj.extra = extra
+        obj.save(update_fields=['extra'])
+        return JsonResponse({'status': True, 'caps': extra['capabilities']})
+
+    if action == 'dismiss':
+        """关闭能力提示。"""
+        extra = dict(obj.extra or {})
+        extra.pop('pending_capabilities', None)
+        extra['capabilities_nag_disabled'] = True
+        obj.extra = extra
+        obj.save(update_fields=['extra'])
+        return JsonResponse({'status': True})
+
     if action in ('toggle', 'set'):
         on = True if action == 'toggle' \
             else str(request.POST.get('on', '1')).lower() in ('1', 'true', 'on')
