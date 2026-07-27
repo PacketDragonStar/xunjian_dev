@@ -290,6 +290,14 @@ def load_checker_overrides():
                 'datetime': __import__('datetime').datetime,
                 'timedelta': __import__('datetime').timedelta,
             }
+            # 注入 custom_checks 的私有工具函数（DB checker 源码依赖它们）
+            try:
+                import app02.custom_checks as _cc
+                for _name in ('_parse_log_time', '_MONTH_MAP', '_parse_optic_block',
+                              'FLASH_ERROR_PAT', 'BIAS_OFF'):
+                    ns[_name] = getattr(_cc, _name, None)
+            except Exception:
+                pass
             if _reg is not None:
                 ns['register_checker'] = _reg
             compiled = compile(row.source, f'<checker:{row.name}>', 'exec')
