@@ -287,7 +287,8 @@ def load_checker_overrides():
                 're': __import__('re'),
                 'json': __import__('json'),
                 'math': __import__('math'),
-                'datetime': __import__('datetime'),
+                'datetime': __import__('datetime').datetime,
+                'timedelta': __import__('datetime').timedelta,
             }
             if _reg is not None:
                 ns['register_checker'] = _reg
