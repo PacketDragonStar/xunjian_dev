@@ -75,15 +75,16 @@ class DeviceSession:
         kwargs = _build_conn_kwargs(self.device)
         connection = ConnectHandler(**kwargs)
 
-        # 关分页（hp_comware V7 默认分页，失败不影响后续）
-        try:
-            connection.send_command(
-                'screen-length disable',
-                expect_string=r'>|\$|#|\]',
-                read_timeout=10,
-            )
-        except Exception as e:
-            logger.warning(f'[{self.device.name}] 关分页预命令失败(忽略): {e}')
+        # 关分页 + 关终端监控（避免日志刷屏干扰 netmiko 提示符匹配）
+        for cmd in ('screen-length disable', 'undo terminal monitor'):
+            try:
+                connection.send_command(
+                    cmd,
+                    expect_string=r'>|\$|#|\]',
+                    read_timeout=10,
+                )
+            except Exception as e:
+                logger.warning(f'[{self.device.name}] 预命令失败(忽略): {cmd}: {e}')
 
         logger.info(f'[{self.device.name}] 连接成功')
         return connection
