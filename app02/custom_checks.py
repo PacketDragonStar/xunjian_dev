@@ -648,8 +648,8 @@ def check_logbuffer(parsed, baseline, cfg, extra):
     window_days = int(cfg.get('window_days', 2))
     cutoff = datetime.now() - timedelta(days=window_days)
 
-    # 屏蔽的日志：管理命令操作记录 / SSH 登录登出
-    skip_pat = re.compile(r'SHELL/[456]/SHELL_CMD|SSHS?/')
+    # 屏蔽的日志：管理命令操作记录 / SHELL 登录登出 / SSH 登录登出
+    skip_pat = re.compile(r'SHELL/[456]/(SHELL_CMD|SHELL_LOGIN|SHELL_LOGOUT)|SSHS?/')
 
     # 仅匹配「模块名/严重级/子消息」形态（如 PWDCTL/3/P），避免把接口编号误判
     sev_re = re.compile(r'[A-Za-z]+/(\d)/')
