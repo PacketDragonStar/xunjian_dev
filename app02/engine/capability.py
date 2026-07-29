@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # ── 探针命令：单一真源（INCLUDE_TOKENS → PROBE_COMMAND）──
 INCLUDE_TOKENS = [
     'ospf', 'bgp', 'vrrp', 'irf', 'm-lag',
-    'remote-backup-group', 'security-zone', 'link-aggregation', 'lacp', 'zone',
+    'remote-backup', 'security-zone', 'link-aggregation', 'lacp', 'zone',
     'nqa', 'vpn-instance',
 ]
 PROBE_COMMAND = 'display current-configuration | include ' + '|'.join(INCLUDE_TOKENS)
@@ -39,7 +39,7 @@ FEATURE_KEYWORDS = {
     'vrrp':     [r'vrrp\s+vrid'],
     'irf':      [r'^\s*irf\s+member'],
     'm-lag':    [r'^\s*m-lag\s+'],
-    'rbm':      [r'remote-backup-group'],
+    'rbm':      [r'remote-backup.group'],
     'security': [r'security-zone'],
     'lacp':     [r'link-aggregation'],
     'nqa':      [r'^\s*nqa\s+'],

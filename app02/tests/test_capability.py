@@ -90,7 +90,7 @@ class DetectCapabilitiesTest(unittest.TestCase):
         # 否则探针根本采不到该关键字 → 探测恒为空（v2 漂移硬伤的回归防护）。
         primary = {
             'ospf': 'ospf', 'bgp': 'bgp', 'vrrp': 'vrrp', 'irf': 'irf',
-            'm-lag': 'm-lag', 'rbm': 'remote-backup-group',
+            'm-lag': 'm-lag', 'rbm': 'remote-backup',
             'security': 'security-zone', 'lacp': 'link-aggregation',
             'nqa': 'nqa',
         }
