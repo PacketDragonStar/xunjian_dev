@@ -635,10 +635,9 @@ def _parse_log_time(line):
 
 @register_checker('check_logbuffer')
 def check_logbuffer(parsed, baseline, cfg, extra):
-    """日志缓冲检查：只统计【最近 N 天】内的 Error/Critical 级别日志，忽略历史日志。
+    """日志缓冲检查：统计【最近 N 天】内的异常日志。
 
-    日志时间戳格式（hp_comware V7，行首）：
-        %Jun 24 17:26:46:437 2026 oasw001... SHELL/6/SHELL_CMD: ...
+    屏蔽无意义的管理命令日志（SHELL/4,5,6/SHELL_CMD）。
     时间窗口可在 CheckItem.checker_config 配置：{"window_days": 2}（默认 2 天）。
     """
     text = (parsed or '').strip()
@@ -649,13 +648,13 @@ def check_logbuffer(parsed, baseline, cfg, extra):
     window_days = int(cfg.get('window_days', 2))
     cutoff = datetime.now() - timedelta(days=window_days)
 
-    critical_kw = re.compile(r'\b(Critical|Fatal|Emergency|Alert)\b', re.I)
-    # 仅匹配「模块名/严重级/子消息」形态（如 PWDCTL/3/P），避免把接口编号
-    # （GigabitEthernet1/0/1 中的 /0/）误判为严重级 0（紧急）导致良性日志误报。
+    # 屏蔽的日志：管理命令操作记录
+    skip_pat = re.compile(r'SHELL/[456]/SHELL_CMD')
+
+    # 仅匹配「模块名/严重级/子消息」形态（如 PWDCTL/3/P），避免把接口编号误判
     sev_re = re.compile(r'[A-Za-z]+/(\d)/')
 
-    recent_critical = []   # 窗口内的关键字(critical)命中行
-    recent_sev_err = []    # 窗口内的 severity 0-3 行
+    recent = []
     valid_lines = 0
 
     for line in text.splitlines():
@@ -663,26 +662,24 @@ def check_logbuffer(parsed, baseline, cfg, extra):
         if not m:
             continue
         valid_lines += 1
-        sev = int(m.group(1))
 
         ts = _parse_log_time(line)
         if ts is None or ts < cutoff:
-            # 无时间戳（无法判断新旧）或属于历史日志 -> 忽略，避免历史误报
             continue
 
-        if critical_kw.search(line):
-            recent_critical.append(line)
-        if sev <= 3:
-            recent_sev_err.append((sev, line))
+        # 跳过管理员命令日志
+        if skip_pat.search(line):
+            continue
+
+        sev = int(m.group(1))
+        recent.append((sev, line))
 
     if valid_lines == 0:
         return False, '未找到有效日志格式，输出可能异常'
 
-    if recent_critical:
-        return False, f'近 {window_days} 天内存在 {len(recent_critical)} 条 Critical/Fatal/Emergency/Alert 级别日志'
-    if recent_sev_err:
-        sev, line = recent_sev_err[0]
-        return False, f'近 {window_days} 天内存在 {len(recent_sev_err)} 条 Error 及以上级别日志(sev={sev}): {line[:80]}...'
+    if recent:
+        sev, line = recent[0]
+        return False, f'近 {window_days} 天内存在 {len(recent)} 条异常日志(sev={sev}): {line[:80]}...'
 
     return True, ''
 BIAS_OFF = 0.1  # 偏置电流(A)低于此值视为激光器关闭

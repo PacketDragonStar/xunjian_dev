@@ -175,19 +175,36 @@ class CustomCheckerRegressionTest(unittest.TestCase):
         from app02.custom_checks import check_logbuffer
         old = datetime.now() - timedelta(days=21)
         ts = old.strftime('%b %d %H:%M:%S %Y')
-        # 确保月份缩写正确（H3C 格式：Jul）
         log = f'%{ts} dev001 DEV/2/OLD_ERROR test\n'
         ok, notes = check_logbuffer(log, None, {'window_days': 2}, {})
         self.assertTrue(ok, msg=f'21天前日志应被过滤: {notes}')
 
-    def test_logbuffer_catches_today_error(self):
-        """今天的 severity=3 日志必须捕获"""
+    def test_logbuffer_catches_today_any_level(self):
+        """今天的任何级别日志都应捕获（除 SHELL_CMD）"""
         from app02.custom_checks import check_logbuffer
         now = datetime.now()
         ts = now.strftime('%b %d %H:%M:%S %Y')
-        log = f'%{ts} dev001 DEV/3/ERROR_NOW test\n'
+        log = f'%{ts} dev001 DEV/6/INFO test\n'
         ok, notes = check_logbuffer(log, None, {'window_days': 2}, {})
-        self.assertFalse(ok, msg='今天的 error 日志必须捕获')
+        self.assertFalse(ok, msg='今天的任何日志都应被捕获')
+
+    def test_logbuffer_skips_shell_cmd(self):
+        """SHELL/6/SHELL_CMD 应被屏蔽"""
+        from app02.custom_checks import check_logbuffer
+        now = datetime.now()
+        ts = now.strftime('%b %d %H:%M:%S %Y')
+        log = f'%{ts} asw001 SHELL/6/SHELL_CMD: cmd ignored\n'
+        ok, notes = check_logbuffer(log, None, {'window_days': 2}, {})
+        self.assertTrue(ok, msg=f'SHELL_CMD 应被屏蔽: {notes}')
+
+    def test_logbuffer_skips_shell_cmd_level_4(self):
+        """SHELL/4/SHELL_CMD 也应被屏蔽"""
+        from app02.custom_checks import check_logbuffer
+        now = datetime.now()
+        ts = now.strftime('%b %d %H:%M:%S %Y')
+        log = f'%{ts} asw001 SHELL/4/SHELL_CMD: cmd ignored\n'
+        ok, notes = check_logbuffer(log, None, {'window_days': 2}, {})
+        self.assertTrue(ok, msg=f'SHELL/4/SHELL_CMD 应被屏蔽: {notes}')
 
     def test_logbuffer_empty_input(self):
         from app02.custom_checks import check_logbuffer
