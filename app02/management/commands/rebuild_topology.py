@@ -42,6 +42,10 @@ class Command(BaseCommand):
         parser.add_argument('--legacy-fixture', action='store_true',
                             help='push 时改用旧版 .txt fixture 导入（需先 export --raw），'
                                  '默认用结构化 JSON 薄导入（阶段三）')
+        parser.add_argument('--netbox', action='store_true',
+                            help='同时同步 NetBox CMDB（需 settings.NETBOX_URL/TOKEN）')
+        parser.add_argument('--netbox-delete', action='store_true',
+                            help='NetBox 同步时执行删除（默认仅报告）')
 
     def handle(self, *args, **options):
         site = options['site']
@@ -92,6 +96,12 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.SUCCESS(
                 '\n完成（未推送拓扑图）。如需刷新 Neo4j，请加 --push。'))
+
+        # 4) 可选：同步 NetBox
+        if options.get('netbox'):
+            self.stdout.write(self.style.WARNING('\n[3/3] 同步 NetBox CMDB (sync_netbox)...'))
+            netbox_delete = options.get('netbox_delete', False)
+            call_command('sync_netbox', site=sub_site, push=True, delete=netbox_delete)
 
     @staticmethod
     def _site_dirs(fixtures_root, site):

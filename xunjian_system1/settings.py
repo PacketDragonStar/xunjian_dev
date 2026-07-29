@@ -181,3 +181,10 @@ NETWORK_SEEK_PYTHON = r'C:/Users/ZSS/Desktop/network-seek/venv/Scripts/python.ex
 NEO4J_BOLT_URI = 'bolt://localhost:7687'
 NEO4J_USER = 'neo4j'
 NEO4J_PASSWORD = 'networkseek2024'
+
+# ═══════════════════════════════════════════════════════
+#  NetBox 联动（DCIM / IPAM）
+#  不配或置空则 sync_netbox 仅导文件不推 API
+# ═══════════════════════════════════════════════════════
+NETBOX_URL = 'http://<内网IP>:8080'       # 改成实际内网 NetBox 地址
+NETBOX_TOKEN = ''                          # NetBox UI → Profile → API Tokens

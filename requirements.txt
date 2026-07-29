@@ -8,5 +8,6 @@ Pillow==10.4.0
 textfsm==1.1.2
 grappelli-safe==1.1.1
 django-grappelli==4.0.1
+pynetbox>=7.3
 tailer
 tqdm

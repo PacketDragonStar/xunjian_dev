@@ -126,14 +126,16 @@ def parse_interface_brief(text):
 
 # ───────────────────────── 运行配置（VLAN / IP / ACL / VRF） ─────────────────────────
 def parse_running_config(text):
-    """display current-configuration → dict(vlans/interface_vlans/ips/acls/rules/vrfs)
+    """display current-configuration → dict(vlans/interface_vlans/ips/acls/rules/vrfs/services/asn/nat)
 
     vlans:          List[dict(vlan_id, name)]
     interface_vlans:List[dict(interface, vlan_id)]
     ips:            List[dict(interface_name, cidr, vrf)]
     acls:           List[dict(name, acl_type)]
     rules:          List[dict(rule_id, acl_name, action, source_ip, dest_ip, protocol)]
-    vrfs:           List[dict(name, rd)]
+    vrfs:           List[dict(name, rd, rt_import, rt_export)]
+    services:       List[dict(type, address, port)]
+    asn:            str (AS 号，无 BGP 则为空)
     """
     vlans: List[Dict] = []
     interface_vlans: List[Dict] = []
@@ -141,10 +143,13 @@ def parse_running_config(text):
     acls: List[Dict] = []
     rules: List[Dict] = []
     vrfs: List[Dict] = []
+    services: List[Dict] = []
+    asn = ''
 
     if not text:
         return dict(vlans=vlans, interface_vlans=interface_vlans, ips=ips,
-                    acls=acls, rules=rules, vrfs=vrfs)
+                    acls=acls, rules=rules, vrfs=vrfs,
+                    services=services, asn=asn)
 
     # VLAN 定义
     for m in re.finditer(r'^\s*vlan\s+(\d+)', text, re.MULTILINE):
@@ -156,13 +161,18 @@ def parse_running_config(text):
             name = mn.group(1).strip()
         vlans.append({'vlan_id': vid, 'name': name})
 
-    # 接口块
+    # 接口块（修复 IP→VRF 关联）
     blocks = re.split(r'(?=^interface\s)', text, flags=re.MULTILINE)
     for blk in blocks:
         mif = re.search(r'^interface\s+(\S+)', blk, re.MULTILINE)
         if not mif:
             continue
         intf = mif.group(1)
+        # 当前接口的 VRF 上下文（NetBox 联动 · 2026-07-28）
+        vrf_name = ''
+        mvr = re.search(r'ip binding vpn-instance\s+(\S+)', blk)
+        if mvr:
+            vrf_name = mvr.group(1)
         mav = re.search(r'port access vlan\s+(\d+)', blk)
         if mav:
             interface_vlans.append({'interface': intf, 'vlan_id': int(mav.group(1))})
@@ -171,10 +181,18 @@ def parse_running_config(text):
             interface_vlans.append({'interface': intf, 'vlan_id': int(mtv.group(1))})
         for mip in re.finditer(r'ip address\s+(\d+\.\d+\.\d+\.\d+)\s+(\d+\.\d+\.\d+\.\d+)', blk):
             cidr = _ip_mask_to_cidr(mip.group(1), mip.group(2))
-            ips.append({'interface_name': intf, 'cidr': cidr, 'vrf': ''})
-        mvr = re.search(r'ip binding vpn-instance\s+(\S+)', blk)
-        if mvr and intf.lower().startswith('vlan-interface'):
-            vrfs.append({'name': mvr.group(1), 'rd': mvr.group(1)})
+            ips.append({'interface_name': intf, 'cidr': cidr, 'vrf': vrf_name})
+        if vrf_name:
+            # VRF 去重（同 VRF 名只记一条，保留 Route Target）
+            if not any(v['name'] == vrf_name for v in vrfs):
+                vrfs.append({'name': vrf_name, 'rd': vrf_name, 'rt_import': [], 'rt_export': []})
+            # 独立 route-target 行
+            for mrt in re.finditer(r'route-target\s+(import|export)\s+(\S+)', blk):
+                target_vrf = next((v for v in vrfs if v['name'] == vrf_name), None)
+                if target_vrf:
+                    key = 'rt_import' if mrt.group(1) == 'import' else 'rt_export'
+                    if mrt.group(2) not in target_vrf[key]:
+                        target_vrf[key].append(mrt.group(2))
 
     # ACL
     for m in re.finditer(r'^\s*acl\s+(?:advanced|basic|number)\s+(\d+)', text, re.MULTILINE):
@@ -197,8 +215,24 @@ def parse_running_config(text):
                       'source_ip': src.group(1) if src else '', 'dest_ip': dst.group(1) if dst else '',
                       'protocol': proto})
 
+    # ASN（NetBox 联动 · 2026-07-28）
+    masn = re.search(r'(?:router\s+)?bgp\s+(\d+)', text, re.I)
+    if masn:
+        asn = masn.group(1)
+
+    # Services（NTP / Syslog / DNS / SNMP）（NetBox 联动 · 2026-07-28）
+    for mntp in re.finditer(r'ntp-service\s+server\s+(\S+)', text, re.I):
+        services.append({'type': 'NTP', 'address': mntp.group(1), 'port': 123})
+    for mlog in re.finditer(r'info-center\s+loghost\s+(\S+)', text, re.I):
+        services.append({'type': 'Syslog', 'address': mlog.group(1), 'port': 514})
+    for mdns in re.finditer(r'dns\s+server\s+(\S+)', text, re.I):
+        services.append({'type': 'DNS', 'address': mdns.group(1), 'port': 53})
+    if re.search(r'snmp-agent', text, re.I):
+        services.append({'type': 'SNMP', 'address': '', 'port': 161})
+
     return dict(vlans=vlans, interface_vlans=interface_vlans, ips=ips,
-                acls=acls, rules=rules, vrfs=vrfs)
+                acls=acls, rules=rules, vrfs=vrfs,
+                services=services, asn=asn)
 
 
 def _nearest_acl(rc: str, pos: int) -> str:
@@ -966,3 +1000,126 @@ def parse_ospf_routing(text):
                     continue
 
     return out
+
+
+# ════════════════════════════════════════════════
+#  电源 / 槽位 / NAT（NetBox 联动 · 2026-07-28）
+# ════════════════════════════════════════════════
+# ───────────────────────── 电源（display power） ─────────────────────────
+def parse_power(text):
+    """display power → [{id, status, type}, ...]
+
+    H3C 典型输出（化龙/知识城 2026-07）：
+      Power 1 State: Normal / Power 2 State: Normal
+    兼容 Power 1: / State: / Type: 多行模式。
+    """
+    if not text:
+        return []
+    supplies = []
+    current = {}
+    for line in text.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        m = re.match(r'Power\s*(\d+)\s*(?::\s*|State\s*:\s*(\S+))', s, re.I)
+        if m:
+            if current and current.get('id'):
+                supplies.append(current)
+            current = {'id': m.group(1)}
+            if m.group(2):
+                current['status'] = m.group(2)
+            continue
+        if current:
+            mt = re.match(r'State\s*:\s*(\S+)', s, re.I)
+            if mt:
+                current['status'] = mt.group(1)
+                continue
+            mt = re.match(r'Type\s*:\s*(\S+)', s, re.I)
+            if mt:
+                current['type'] = mt.group(1)
+                continue
+    if current and current.get('id'):
+        supplies.append(current)
+    for sup in supplies:
+        sup.setdefault('status', '')
+        sup.setdefault('type', '')
+    return supplies
+
+
+# ───────────────────────── 设备槽位/板卡（display device） ─────────────────────────
+def parse_device(text):
+    """display device → [{slot, type, status}, ...]
+
+    H3C 典型输出：Slot 1  MPU  Normal  S6820-56HF
+    """
+    if not text:
+        return []
+    boards = []
+    for line in text.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        m = re.match(r'Slot\s*(\d+)\s*', s, re.I)
+        if not m:
+            continue
+        slot = m.group(1)
+        rest = s[m.end():].strip()
+        toks = rest.split()
+        btype = ''
+        status = ''
+        if len(toks) >= 1 and re.match(
+            r'(Normal|Fault|Absent|Off|Illegal|Master|Standby|Slave)',
+            toks[-1], re.I
+        ):
+            status = toks[-1]
+            btype = ' '.join(toks[:-1])
+        elif len(toks) >= 2 and re.match(
+            r'(Normal|Fault|Absent|Off|Illegal|Master|Standby|Slave)',
+            toks[-2], re.I
+        ):
+            status = toks[-2]
+            btype = ' '.join(toks[:-2])
+        else:
+            btype = ' '.join(toks)
+            status = 'Unknown'
+        boards.append({'slot': slot, 'type': btype.strip(), 'status': status})
+    return boards
+
+
+# ───────────────────────── NAT（防火墙 NAT 配置） ─────────────────────────
+def parse_nat(text):
+    """NAT 配置 → [{type, inside_ip, outside_ip, port}, ...]
+
+    H3C 防火墙：nat server protocol tcp global 10.1.1.1 443 inside 192.168.1.1 443
+    """
+    if not text:
+        return []
+    entries = []
+    for line in text.splitlines():
+        s = line.strip()
+        if not s or not s.lower().startswith('nat '):
+            continue
+        if s.lower().startswith('nat server'):
+            m = re.search(
+                r'global\s+(\S+)\s*(\d+)?\s+inside\s+(\S+)\s*(\d+)?',
+                s, re.I
+            )
+            if m:
+                entries.append({
+                    'type': 'server',
+                    'outside_ip': m.group(1),
+                    'outside_port': int(m.group(2)) if m.group(2) else None,
+                    'inside_ip': m.group(3),
+                    'inside_port': int(m.group(4)) if m.group(4) else None,
+                })
+        elif s.lower().startswith('nat static'):
+            toks = s.split()
+            if len(toks) >= 4:
+                entries.append({
+                    'type': 'static',
+                    'inside_ip': toks[2],
+                    'outside_ip': toks[3],
+                    'outside_port': None,
+                    'inside_port': None,
+                })
+    return entries
