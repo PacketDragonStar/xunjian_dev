@@ -637,8 +637,13 @@ def _parse_log_time(line):
 def check_logbuffer(parsed, baseline, cfg, extra):
     """日志缓冲检查：统计【最近 N 天】内的异常日志。
 
-    屏蔽无意义的管理命令日志（SHELL/4,5,6/SHELL_CMD）。
-    时间窗口可在 CheckItem.checker_config 配置：{"window_days": 2}（默认 2 天）。
+    屏蔽规则可通过 checker_config.skip_patterns 配置（页面编辑，正则列表）。
+    时间窗口通过 checker_config.window_days 配置（默认 2 天）。
+
+    默认屏蔽：
+      SHELL/[456]/(SHELL_CMD|SHELL_LOGIN|SHELL_LOGOUT)  管理命令/登录
+      SSHS?/                                           SSH
+      EDEV/\\d/EDEV_DEBUG                              调试日志
     """
     text = (parsed or '').strip()
     if not text:
@@ -648,8 +653,13 @@ def check_logbuffer(parsed, baseline, cfg, extra):
     window_days = int(cfg.get('window_days', 2))
     cutoff = datetime.now() - timedelta(days=window_days)
 
-    # 屏蔽的日志：管理命令 / SHELL / SSH / EDEV 调试
-    skip_pat = re.compile(r'SHELL/[456]/(SHELL_CMD|SHELL_LOGIN|SHELL_LOGOUT)|SSHS?/|EDEV/\d/EDEV_DEBUG')
+    # 屏蔽列表：支持 checker_config.skip_patterns 自定义
+    spats = cfg.get('skip_patterns') or [
+        r'SHELL/[456]/(SHELL_CMD|SHELL_LOGIN|SHELL_LOGOUT)',
+        r'SSHS?/',
+        r'EDEV/\d/EDEV_DEBUG',
+    ]
+    skip_re = re.compile('|'.join(spats))
 
     # 仅匹配「模块名/严重级/子消息」形态（如 PWDCTL/3/P），避免把接口编号误判
     sev_re = re.compile(r'[A-Za-z]+/(\d)/')
@@ -667,8 +677,8 @@ def check_logbuffer(parsed, baseline, cfg, extra):
         if ts is None or ts < cutoff:
             continue
 
-        # 跳过管理员命令日志
-        if skip_pat.search(line):
+        # 跳过配置中的屏蔽日志
+        if skip_re.search(line):
             continue
 
         sev = int(m.group(1))
