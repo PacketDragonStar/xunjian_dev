@@ -206,6 +206,15 @@ class CustomCheckerRegressionTest(unittest.TestCase):
         ok, notes = check_logbuffer(log, None, {'window_days': 2}, {})
         self.assertTrue(ok, msg=f'SHELL/4/SHELL_CMD 应被屏蔽: {notes}')
 
+    def test_logbuffer_skips_ssh_login(self):
+        """SSH 登录日志应被屏蔽"""
+        from app02.custom_checks import check_logbuffer
+        now = datetime.now()
+        ts = now.strftime('%b %d %H:%M:%S %Y')
+        log = f'%{ts} asw001 SSHS/6/SSHS_LOG: Accepted publickey\n'
+        ok, notes = check_logbuffer(log, None, {'window_days': 2}, {})
+        self.assertTrue(ok, msg=f'SSH 登录应被屏蔽: {notes}')
+
     def test_logbuffer_empty_input(self):
         from app02.custom_checks import check_logbuffer
         ok, notes = check_logbuffer('', None, {}, {})
