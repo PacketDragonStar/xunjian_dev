@@ -50,6 +50,16 @@ Single-context 布局：根目录 `CONTEXT.md`（待创建）+ `docs/adr/`。See
 **exec 命名空间已注入**：`re`, `json`, `math`, `datetime`(类), `timedelta`, `_parse_log_time`, `_MONTH_MAP`, `_parse_optic_block`, `FLASH_ERROR_PAT`, `BIAS_OFF`。
 新增文件版 checker 依赖新的私有工具时，必须同步更新 pipeline.py 中的注入列表。
 
+### 光模块入 CMDB（2026-08-04 已验证）
+
+- `CmdbInterface` 带光模块字段：`transceiver_type/vendor/serial/wavelength/distance/ordering`
+- 接口页筛选器：`trans=any/none/idle/inuse`（idle=有光模块且 DOWN/ADM）
+- **坑①**：`parse_transceiver` 只认 `Transceiver Type`（`Type\s*:` 会误匹配 `Connector Type`→LC/MPO）
+- **坑②**：接口长名→短名映射必须支持 4 段板卡口（`FortyGigE1/4/0/33`→`FGE1/4/0/33`），正则 `(?:/\d+){{2,4}}`
+- **坑③**：改 parser 后旧的 `DeviceParseResult` 是脏数据，需删掉该命令的记录让 `sync_cmdb` 回退实时解析
+- 统计口径：真空闲 = ADM(NO-USE) + DOWN无描述；有 `To-[对端]` 描述的 DOWN 不算空闲
+- 工具脚本：`统计空闲光模块.py` / `统计光模块按型号.py` / `按站点统计光模块.py` / `查100G光模块.py`
+
 ### 已有 ADR
 
 - `docs/adr/adr-001-grill-review.md` — Threading / 无加密 / role 人工指定 / 测试覆盖率 ≥80%
