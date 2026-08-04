@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+{% block css %}
+<style>
+:root{--accent:#0F6E56;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;--ok:#1a7f37;--warn:#bc4c00;--fail:#cf222e;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1100px;margin:0 auto;padding:26px 16px;}
+h4{margin:0 0 16px;font-weight:700}
+.bk{padding:2px 9px;border-radius:20px;font-size:.73rem;font-weight:600;white-space:nowrap;}
+.bk-g{background:#dafbe1;color:#1a7f37}.bk-r{background:#ffebe9;color:#cf222e}.bk-o{background:#fff1e5;color:#bc4c00}
+.bk-gray{background:#f3f4f6;color:#57606a}.bk-bl{background:#ddf4ff;color:#0969da}
+.crd{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:18px;margin-bottom:16px}
+.crd h5{margin:0 0 12px;font-size:.95rem;color:#24292f;border-bottom:1px solid var(--border);padding-bottom:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:768px){.grid2,.grid3{grid-template-columns:1fr}}
+.info-item{font-size:.85rem;padding:4px 0}
+.info-item label{color:#57606a;font-size:.75rem;display:block}
+.tb{width:100%;border-collapse:collapse;font-size:.83rem}
+.tb th{background:#f6f8fa;padding:8px 10px;text-align:left;font-size:.75rem;color:#57606a;border-bottom:2px solid var(--border)}
+.tb td{padding:7px 10px;border-bottom:1px solid #eef1f4}
+.tb tr:hover{background:#f6fbff}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <h4>🔌 {{ dev.name }} <span class="bk bk-gray">{{ dev.site }}</span> <span style="font-size:.8rem;color:#57606a;font-weight:400">硬件资产详情</span></h4>
+
+  <!-- 基本信息 -->
+  <div class="crd">
+    <h5>📋 设备基本信息</h5>
+    <div class="grid2">
+      <div class="info-item"><label>设备名称</label><strong>{{ dev.name }}</strong></div>
+      <div class="info-item"><label>站点</label>{{ dev.site }}</div>
+      <div class="info-item"><label>型号</label>{{ dev.model|default:"—" }}</div>
+      <div class="info-item"><label>厂商</label>{{ dev.vendor|default:"H3C" }}</div>
+      <div class="info-item"><label>序列号</label><code>{{ dev.serial|default:"—" }}</code></div>
+      <div class="info-item"><label>管理IP</label>{{ dev.mgmt_ip|default:"—" }}</div>
+      <div class="info-item"><label>软件版本</label>{{ dev.os_version|default:"—" }}</div>
+      <div class="info-item"><label>角色</label>{{ dev.role|default:"—" }}</div>
+      <div class="info-item"><label>CPU(5s)</label>{% if dev.cpu_5s != None %}{{ dev.cpu_5s }}%{% else %}—{% endif %}</div>
+      <div class="info-item"><label>内存空闲</label>{% if dev.mem_free_ratio != None %}{{ dev.mem_free_ratio }}%{% else %}—{% endif %}</div>
+      <div class="info-item"><label>运行天数</label>{{ dev.uptime_days|default:"—" }}</div>
+      <div class="info-item"><label>最近同步</label>{{ dev.last_sync|date:"Y-m-d H:i"|default:"—" }}</div>
+    </div>
+  </div>
+
+  <!-- 板卡 -->
+  <div class="crd">
+    <h5>🖥️ 板卡槽位 ({{ boards|length }})</h5>
+    {% if boards %}
+    <table class="tb"><thead><tr><th>槽位</th><th>板卡类型</th><th>状态</th></tr></thead>
+    <tbody>{% for b in boards %}<tr><td>Slot {{ b.slot }}</td><td>{{ b.board_type }}</td><td>{% if b.status == 'Normal' %}<span class="bk bk-g">正常</span>{% elif b.status == 'Fault' %}<span class="bk bk-r">故障</span>{% else %}{{ b.status }}{% endif %}</td></tr>{% endfor %}</tbody></table>
+    {% else %}<div style="color:#57606a;font-size:.85rem">无数据</div>{% endif %}
+  </div>
+
+  <!-- 电源 + 风扇 -->
+  <div class="grid2">
+    <div class="crd">
+      <h5>⚡ 电源 ({{ power_supplies|length }})</h5>
+      {% if power_supplies %}
+      <table class="tb"><thead><tr><th>编号</th><th>型号</th><th>状态</th></tr></thead>
+      <tbody>{% for p in power_supplies %}<tr><td>PSU {{ p.psu_id }}</td><td>{{ p.psu_type|default:"—" }}</td><td>{% if p.status == 'Normal' %}<span class="bk bk-g">正常</span>{% else %}<span class="bk bk-o">{{ p.status }}</span>{% endif %}</td></tr>{% endfor %}</tbody></table>
+      {% else %}<div style="color:#57606a;font-size:.85rem">无数据</div>{% endif %}
+    </div>
+    <div class="crd">
+      <h5>🌀 风扇 ({{ fans|length }})</h5>
+      {% if fans %}
+      <table class="tb"><thead><tr><th>编号</th><th>型号</th><th>状态</th></tr></thead>
+      <tbody>{% for f in fans %}<tr><td>Fan {{ f.fan_id }}</td><td>{{ f.fan_type|default:"—" }}</td><td>{% if f.status == 'Normal' %}<span class="bk bk-g">正常</span>{% else %}<span class="bk bk-o">{{ f.status }}</span>{% endif %}</td></tr>{% endfor %}</tbody></table>
+      {% else %}<div style="color:#57606a;font-size:.85rem">无数据</div>{% endif %}
+    </div>
+  </div>
+
+  <!-- 光模块 -->
+  <div class="crd">
+    <h5>🔆 光模块 ({{ transceivers|length }})</h5>
+    {% if transceivers %}
+    <table class="tb"><thead><tr><th>接口</th><th>型号</th><th>厂商</th><th>序列号</th><th>波长</th><th>距离</th></tr></thead>
+    <tbody>{% for t in transceivers %}<tr><td><code>{{ t.interface }}</code></td><td>{{ t.module_type|default:"—" }}</td><td>{{ t.vendor|default:"—" }}</td><td><code style="font-size:.75rem">{{ t.serial|default:"—" }}</code></td><td>{{ t.wavelength|default:"—" }}</td><td>{{ t.distance|default:"—" }}</td></tr>{% endfor %}</tbody></table>
+    {% else %}<div style="color:#57606a;font-size:.85rem">无数据（可能无光模块或无回显数据）</div>{% endif %}
+  </div>
+
+  <!-- Flash -->
+  {% if flash %}
+  <div class="crd">
+    <h5>💾 Flash 存储</h5>
+    <div class="grid2">
+      <div class="info-item"><label>总容量</label>{{ flash.total_kb }} KB</div>
+      <div class="info-item"><label>已用</label>{{ flash.used_kb }} KB ({{ flash.used_pct }}%)</div>
+      <div class="info-item"><label>剩余</label>{{ flash.free_kb }} KB</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div style="text-align:center;padding:16px">
+    <a href="/cmdb/device/" style="color:var(--accent)">← 返回设备列表</a>
+  </div>
+</div>
+{% endblock %}

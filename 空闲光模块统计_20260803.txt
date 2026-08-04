@@ -1,0 +1,115 @@
+=== 最近巡检: 2026-08-03 17:56:27 (102台设备) ===
+
+设备                                                          光模块数    空闲数  空闲端口
+------------------------------------------------------------------------------------------------------------------------
+asw001&002.pri.2IDC4f.hualong.xc                             108      4  HGE1/0/27, HGE1/0/28, HGE2/0/27, HGE2/0/28
+asw001.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw001.a.pri.zscidc2f1.gzxc-zwww                              54      2  HGE1/0/51, HGE1/0/52
+asw002.a.pri.zscidc2f1.gzxc-hlw                               56      4  HGE1/0/51, HGE1/0/52, HGE1/0/53, HGE1/0/54
+asw002.a.pri.zscidc2f1.gzxc-zwww                              54      2  HGE1/0/51, HGE1/0/52
+asw003&004.pri.2IDC4f.hualong.xc                             108      4  HGE1/0/27, HGE1/0/28, HGE2/0/27, HGE2/0/28
+asw003.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw003.a.pri.zscidc2f1.gzxc-zwww                              54      2  HGE1/0/51, HGE1/0/52
+asw004.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw004.a.pri.zscidc2f1.gzxc-zwww                              54      2  HGE1/0/51, HGE1/0/52
+asw005&006.pri.2IDC4f.hualong.xc                             108      4  HGE1/0/27, HGE1/0/28, HGE2/0/27, HGE2/0/28
+asw005.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw005.a.pri.zscidc2f1.gzxc-zwww                              54      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+asw006.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw006.a.pri.zscidc2f1.gzxc-zwww                              54      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+asw007&008.pri.2IDC4f.hualong.xc                             108      4  HGE1/0/27, HGE1/0/28, HGE2/0/27, HGE2/0/28
+asw007.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw007.a.pri.zscidc2f1.gzxc-zwww                              54      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+asw008.a.pri.zscidc2f1.gzxc-hlw                               53      2  HGE1/0/51, HGE1/0/52
+asw008.a.pri.zscidc2f1.gzxc-zwww                              54      4  HGE1/0/49, HGE1/0/50, HGE1/0/53, HGE1/0/54
+asw009&010.pri.2IDC4f.hualong.xc                             107      4  HGE1/0/27, HGE1/0/28, HGE2/0/27, HGE2/0/28
+asw009.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw009.a.pri.zscidc2f2.gzxc-zwww                              54      2  HGE1/0/51, HGE1/0/52
+asw010.a.pri.zscidc2f1.gzxc-hlw                               53      2  HGE1/0/51, HGE1/0/52
+asw010.a.pri.zscidc2f3.gzxc-zwww                              54      2  HGE1/0/51, HGE1/0/52
+asw011&012.pri.2IDC4f.hualong.xc                             108      4  HGE1/0/27, HGE1/0/28, HGE2/0/27, HGE2/0/28
+asw011.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw011.a.pri.zscidc2f4.gzxc-zwww                              54      2  HGE1/0/51, HGE1/0/52
+asw012.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw012.a.pri.zscidc2f5.gzxc-zwww                              54      2  HGE1/0/51, HGE1/0/52
+asw013.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw014.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw015.a.pri.zscidc2f1.gzxc-hlw                               48      2  HGE1/0/51, HGE1/0/52
+asw016.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/53, HGE1/0/54
+asw017.a.pri.zscidc2f1.gzxc-hlw                               54      4  HGE1/0/49, HGE1/0/50, HGE1/0/53, HGE1/0/54
+asw018.a.pri.zscidc2f1.gzxc-hlw                               53      3  HGE1/0/49, HGE1/0/50, HGE1/0/54
+asw019.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw020.a.pri.zscidc2f1.gzxc-hlw                               48      2  HGE1/0/51, HGE1/0/52
+asw021.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw022.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw023.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+asw024.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+csw001&002.pri.2IDC4f.hualong.xc                             166      0
+csw001.a.pri.zscidc2f1.gzxc-hlw                               76      6  FGE3/0/1, FGE3/0/4, FGE3/0/5, FGE3/0/6, FGE3/0/7, FGE3/0/8
+csw001.a.pri.zscidc2f1.gzxc-zwww                              83     19  FGE2/0/7, FGE2/0/8, FGE2/0/9, FGE2/0/10, FGE2/0/31, FGE3/0/1, FGE3/0/2, FGE3/0/3, FGE3/0/4, FGE3/0/19, FGE3/0/20, FGE3/0/21, FGE3/0/22, FGE3/0/23, FGE3/0/24, FGE3/0/25, FGE3/0/26, FGE3/0/27, FGE3/0/31
+csw002.a.pri.zscidc2f1.gzxc-hlw                               79      8  FGE3/0/3, FGE3/0/4, FGE3/0/5, FGE3/0/6, FGE3/0/7, FGE3/0/8, FGE3/0/9, FGE3/0/10
+csw002.a.pri.zscidc2f1.gzxc-zwww                              82     18  FGE2/0/7, FGE2/0/8, FGE2/0/9, FGE2/0/10, FGE2/0/27, FGE2/0/28, FGE2/0/29, FGE2/0/30, FGE2/0/31, FGE3/0/1, FGE3/0/2, FGE3/0/3, FGE3/0/4, FGE3/0/27, FGE3/0/28, FGE3/0/29, FGE3/0/30, FGE3/0/31
+csw003&004.pri.2IDC4f.hualong.xc                             169      0
+csw003.a.pri.zscidc2f1.gzxc-hlw                               82     22  FGE0/0/11, FGE0/0/12, FGE0/0/13, FGE0/0/14, FGE0/0/33, FGE0/0/34, FGE1/0/1, FGE1/0/2, FGE1/0/3, FGE1/0/4, FGE1/0/5, FGE1/0/6, FGE1/0/7, FGE1/0/8, FGE1/0/9, FGE1/0/10, FGE1/0/11, FGE1/0/12, FGE1/0/13, FGE1/0/14, FGE1/0/33, FGE1/0/34
+csw004.a.pri.zscidc2f1.gzxc-hlw                               78     22  FGE0/0/11, FGE0/0/12, FGE0/0/13, FGE0/0/14, FGE0/0/33, FGE0/0/34, FGE1/0/1, FGE1/0/2, FGE1/0/3, FGE1/0/4, FGE1/0/5, FGE1/0/6, FGE1/0/7, FGE1/0/8, FGE1/0/9, FGE1/0/10, FGE1/0/11, FGE1/0/12, FGE1/0/13, FGE1/0/14, FGE1/0/33, FGE1/0/34
+dci001&002.pri.2IDC4f.hualong.xc                             108      8  HGE1/0/25, HGE1/0/26, HGE1/0/27, HGE1/0/28, HGE2/0/25, HGE2/0/26, HGE2/0/27, HGE2/0/28
+dsw001&002.pri.2IDC4f.hualong.xc                             106      4  HGE1/0/27, HGE1/0/28, HGE2/0/27, HGE2/0/28
+fw001.a.pri.zscidc2f1.gzxc-hlw                                41     10  HGE2/2/2, HGE2/2/3, HGE2/2/4, HGE2/2/5, HGE2/2/6, HGE3/1/1, HGE3/1/2, HGE3/2/4, HGE3/2/5, HGE3/2/6
+fw001.a.pri.zscidc2f1.gzxc-zwww                               23      0
+fw001.pri.2IDC4f.hualong.xc                                   63     12  HGE2/1/1, HGE2/1/2, HGE2/2/1, HGE2/2/2, HGE4/1/1, HGE4/1/2, HGE4/1/3, HGE4/1/4, HGE4/1/5, HGE4/1/6, HGE4/2/1, HGE4/2/2
+fw001.pri.zscidc2f1.gzxc                                      36      7  HGE2/2/1, HGE2/2/5, HGE2/2/6, HGE3/2/1, HGE3/2/2, HGE3/2/3, HGE3/2/4
+fw002.a.pri.zscidc2f1.gzxc-hlw                                40      9  HGE2/2/2, HGE2/2/3, HGE2/2/4, HGE2/2/6, HGE3/1/1, HGE3/1/2, HGE3/2/4, HGE3/2/5, HGE3/2/6
+fw002.a.pri.zscidc2f1.gzxc-zwww                               20      0
+fw002.pri.2IDC4f.hualong.xc                                   63     12  HGE2/1/1, HGE2/1/2, HGE2/2/1, HGE2/2/2, HGE4/1/1, HGE4/1/2, HGE4/1/3, HGE4/1/4, HGE4/2/1, HGE4/2/2, HGE4/2/3, HGE4/2/4
+fw002.pri.zscidc2f1.gzxc                                      47     10  HGE2/2/1, HGE2/2/2, HGE2/2/3, HGE2/2/4, HGE2/2/5, HGE3/2/1, HGE3/2/2, HGE3/2/3, HGE3/2/4, HGE3/2/5
+fw003.a.pri.zscidc2f1.gzxc-hlw                                20      0
+fw003.a.pri.zscidc2f1.gzxc-zwww                               36     10  HGE2/2/2, HGE2/2/3, HGE2/2/5, HGE2/2/6, HGE3/1/1, HGE3/1/2, HGE3/2/5, HGE3/2/6, HGE4/1/1, HGE4/1/2
+fw003.pri.2IDC4f.hualong.xc                                   62      3  HGE4/2/2, HGE4/2/3, HGE4/2/4
+fw004.a.pri.zscidc2f1.gzxc-hlw                                20      0
+fw004.a.pri.zscidc2f1.gzxc-zwww                               42     10  HGE2/2/2, HGE2/2/3, HGE2/2/5, HGE2/2/6, HGE3/1/1, HGE3/1/2, HGE3/2/5, HGE3/2/6, HGE4/1/1, HGE4/1/2
+fw004.pri.2IDC4f.hualong.xc                                   63      4  HGE4/2/1, HGE4/2/2, HGE4/2/3, HGE4/2/4
+fw005.a.pri.zscidc2f1.gzxc-hlw                                22      0
+fw005.pri.2IDC4f.hualong.xc                                   16      0
+fw006.a.pri.zscidc2f1.gzxc-hlw                                20      0
+fw006.pri.2IDC4f.hualong.xc                                   18      0
+fw007.pri.2IDC4f.hualong.xc                                   12      0
+fw008.pri.2IDC4f.hualong.xc                                   18      0
+idc001.a.pri.zscidc2f1.gzxc-hlw                               54      2  HGE1/0/51, HGE1/0/52
+idc001.a.pri.zscidc2f1.gzxc-zwww                              54      2  HGE1/0/51, HGE1/0/52
+idc001.pri.zscidc2f1.gzxc                                     54      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+idc002.a.pri.zscidc2f1.gzxc-hlw                               52      2  HGE1/0/53, HGE1/0/54
+idc002.a.pri.zscidc2f1.gzxc-zwww                              54      2  HGE1/0/51, HGE1/0/52
+idc002.pri.zscidc2f1.gzxc                                     53      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+oasw001&002.a.pri.zscidc2f1.gzxc-hlw                           8      0
+oasw001&002.a.pri.zscidc2f1.gzxc-zwww                          8      0
+oasw001&002.pri.2IDC4f.hualong.xc                              8      0
+oasw003&004.a.pri.zscidc2f1.gzxc-hlw                           8      0
+oasw003.pri.2IDC4f.hualong.xc                                  3      0
+oasw004.pri.2IDC4f.hualong.xc                                  2      0
+oasw005&006.a.pri.zscidc2f1.gzxc-hlw                           8      0
+oasw005.pri.2IDC4f.hualong.xc                                  4      0
+oasw007&008.a.pri.zscidc2f1.gzxc-hlw                           8      0
+psw001&002.pri.2IDC4f.hualong.xc                             169      0
+psw001.a.pri.zscidc2f1.gzxc-hlw                               54      4  HGE1/0/49, HGE1/0/50, HGE1/0/53, HGE1/0/54
+psw001.a.pri.zscidc2f1.gzxc-zwww                              54      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+psw001.pri.zscidc2f1.gzxc                                     82     36  FGE0/0/1, FGE0/0/2, FGE0/0/3, FGE0/0/4, FGE0/0/5, FGE0/0/6, FGE0/0/7, FGE0/0/8, FGE0/0/9, FGE0/0/10, FGE0/0/11, FGE0/0/12, FGE0/0/13, FGE0/0/14, FGE0/0/15, FGE0/0/16, FGE0/0/33, FGE0/0/34, FGE1/0/1, FGE1/0/2, FGE1/0/3, FGE1/0/4, FGE1/0/5, FGE1/0/6, FGE1/0/7, FGE1/0/8, FGE1/0/9, FGE1/0/10, FGE1/0/11, FGE1/0/12, FGE1/0/13, FGE1/0/14, FGE1/0/15, FGE1/0/16, FGE1/0/33, FGE1/0/34
+psw002.a.pri.zscidc2f1.gzxc-hlw                               54      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+psw002.a.pri.zscidc2f1.gzxc-zwww                              54      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+psw003.a.pri.zscidc2f1.gzxc-hlw                               76     18  FGE0/0/7, FGE0/0/8, FGE0/0/9, FGE0/0/10, FGE0/0/11, FGE0/0/12, FGE1/0/1, FGE1/0/2, FGE1/0/3, FGE1/0/4, FGE1/0/5, FGE1/0/6, FGE1/0/7, FGE1/0/8, FGE1/0/9, FGE1/0/10, FGE1/0/11, FGE1/0/12
+psw003.a.pri.zscidc2f1.gzxc-zwww                              54      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+psw003.pri.2IDC4f.hualong.xc                                  85     36  FGE0/0/1, FGE0/0/2, FGE0/0/3, FGE0/0/4, FGE0/0/5, FGE0/0/6, FGE0/0/7, FGE0/0/8, FGE0/0/9, FGE0/0/10, FGE0/0/11, FGE0/0/12, FGE0/0/13, FGE0/0/14, FGE0/0/15, FGE0/0/16, FGE0/0/17, FGE0/0/18, FGE0/0/19, FGE0/0/20, FGE0/0/21, FGE0/0/22, FGE0/0/23, FGE0/0/24, FGE0/0/25, FGE0/0/26, FGE0/0/27, FGE0/0/28, FGE0/0/29, FGE0/0/30, FGE0/0/31, FGE0/0/32, FGE1/0/33, FGE1/0/34, FGE1/0/35, FGE1/0/36
+psw004&005.pri.2IDC2f.hualong.xc                              99      0
+psw004.a.pri.zscidc2f1.gzxc-hlw                               78     20  FGE0/0/7, FGE0/0/8, FGE0/0/9, FGE0/0/10, FGE0/0/33, FGE0/0/34, FGE1/0/1, FGE1/0/2, FGE1/0/3, FGE1/0/4, FGE1/0/5, FGE1/0/6, FGE1/0/7, FGE1/0/8, FGE1/0/9, FGE1/0/10, FGE1/0/11, FGE1/0/12, FGE1/0/33, FGE1/0/34
+psw004.a.pri.zscidc2f1.gzxc-zwww                              53      3  HGE1/0/49, HGE1/0/50, HGE1/0/51
+srp001&002.pri.2IDC4f.hualong.xc                             102      0
+usw001.a.pri.zscidc2f1.gzxc-zwww                              54      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+usw002.a.pri.zscidc2f1.gzxc-zwww                              54      4  HGE1/0/49, HGE1/0/50, HGE1/0/51, HGE1/0/52
+
+=== 站点汇总 ===
+化龙    : 光模块 1983 个，空闲  103 个 (空闲率 5.2%)
+知识城   : 光模块 3806 个，空闲  357 个 (空闲率 9.4%)
+
+=== 总计 ===
+已插光模块端口: 5789 个
+空闲光模块 (端口DOWN): 460 个
+空闲率: 7.9%

@@ -1123,3 +1123,108 @@ def parse_nat(text):
                     'inside_port': None,
                 })
     return entries
+
+
+# ───────────────────────── 风扇（display fan） ─────────────────────────
+def parse_fan(text):
+    """display fan → [{fan_id, status, type}, ...]
+
+    H3C 典型输出：
+      Fan 1 State: Normal
+      Fan 2 State: Normal  Type: FAN-80B-1-B
+    """
+    if not text:
+        return []
+    fans = []
+    current = {}
+    for line in text.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        m = re.match(r'Fan\s*(\d+)\s*(?::\s*|State\s*:\s*(\S+))', s, re.I)
+        if m:
+            if current and current.get('fan_id'):
+                fans.append(current)
+            current = {'fan_id': m.group(1)}
+            if m.group(2):
+                current['status'] = m.group(2)
+            continue
+        if current:
+            mt = re.match(r'State\s*:\s*(\S+)', s, re.I)
+            if mt:
+                current['status'] = mt.group(1)
+                continue
+            mt = re.match(r'Type\s*:\s*(\S+)', s, re.I)
+            if mt:
+                current['type'] = mt.group(1)
+                continue
+    if current and current.get('fan_id'):
+        fans.append(current)
+    for f in fans:
+        f.setdefault('status', '')
+        f.setdefault('type', '')
+    return fans
+
+
+# ───────────────────────── 光模块（display transceiver interface） ─────────────────────────
+def parse_transceiver(text):
+    """display transceiver interface → [{iface, type, vendor, serial, wavelength, distance, ordering_name}, ...]
+
+    提取每个接口的光模块核心信息：型号(Transceiver Type)/厂商/序列号/波长/传输距离/订货号。
+    - 只认 Transceiver Type（不误吞 Connector Type）
+    - absent 的端口不入库
+    - Ordering Name 与 Vendor Part Number 归一为 ordering_name（同一模块两种输出）
+    """
+    if not text:
+        return []
+    modules = []
+    cur = {}
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        s = line.strip()
+        # 接口块头（含 absent 标记：整块跳过）
+        mi = re.match(r'(\S+)\s+transceiver\s+information', s, re.I)
+        if mi:
+            if cur.get('iface'):
+                modules.append(cur)
+            if 'absent' in s.lower() or (i + 1 < len(lines) and 'absent' in lines[i + 1].lower()):
+                cur = {}
+            else:
+                cur = {'iface': mi.group(1)}
+            continue
+        if not cur:
+            continue
+        # Transceiver Type（精确，避免误匹配 Connector Type）
+        mt = re.search(r'Transceiver\s+Type\s*:\s*(\S.*)', s, re.I)
+        if mt:
+            cur['type'] = mt.group(1).strip()
+            continue
+        # 订货号：Ordering Name 或 Vendor Part Number（同一模块两种输出）
+        mo = re.search(r'Ordering\s+Name\s*:\s*(\S.*)', s, re.I)
+        if mo:
+            cur['ordering_name'] = mo.group(1).strip()
+            continue
+        mpn = re.search(r'Vendor\s+Part\s+Number\s*:\s*(\S.*)', s, re.I)
+        if mpn:
+            cur.setdefault('ordering_name', mpn.group(1).strip())
+            continue
+        mv = re.search(r'Vendor\s*Name\s*:\s*(\S.*)', s, re.I)
+        if mv:
+            if 'vendor' not in cur:
+                cur['vendor'] = mv.group(1).strip()
+            continue
+        ms = re.search(r'Serial\s*(?:No|Number)?\s*:\s*(\S+)', s, re.I)
+        if ms:
+            cur['serial'] = ms.group(1)
+            continue
+        mw = re.search(r'Wavelength\s*\(?nm\)?\s*:\s*(\d+(?:\.\d+)?)\s*(nm)?', s, re.I)
+        if mw:
+            cur['wavelength'] = mw.group(1)
+            continue
+        md = re.search(r'(?:Transfer|Transmission)\s*Distance\s*\(m\)\s*:\s*(\S.*)', s, re.I)
+        if md:
+            cur['distance'] = md.group(1).strip()
+            continue
+    if cur.get('iface'):
+        modules.append(cur)
+    return modules

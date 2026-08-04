@@ -36,26 +36,36 @@ code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:.78rem;}
         <option value="">全部状态</option>
         <option value="up" {% if status == 'up' %}selected{% endif %}>UP</option>
         <option value="down" {% if status == 'down' %}selected{% endif %}>DOWN</option>
+        <option value="adm" {% if status == 'adm' %}selected{% endif %}>ADM</option>
       </select>
-      <input name="q" value="{{ q }}" placeholder="接口名 / 设备名 / 描述...">
+      <select name="trans" onchange="this.form.submit()">
+        <option value="">全部光模块</option>
+        <option value="any" {% if trans == 'any' %}selected{% endif %}>有光模块</option>
+        <option value="none" {% if trans == 'none' %}selected{% endif %}>无光模块(电口/空)</option>
+        <option value="idle" {% if trans == 'idle' %}selected{% endif %}>★空闲光模块(DOWN/ADM)</option>
+        <option value="inuse" {% if trans == 'inuse' %}selected{% endif %}>在用光模块(UP)</option>
+      </select>
+      <input name="q" value="{{ q }}" placeholder="接口名 / 设备名 / 描述 / 光模块型号...">
       <button class="btn btn-primary btn-sm" type="submit">搜索</button>
     </form>
   </div>
   <div class="tb">
     <table>
       <thead><tr>
-        <th>设备</th><th>接口</th><th>操作状态</th><th>管理状态</th><th>速率</th><th>双工</th><th>VLAN</th><th>描述</th>
+        <th>设备</th><th>接口</th><th>操作状态</th><th>管理状态</th><th>速率</th><th>双工</th><th>VLAN</th><th>光模块型号</th><th>订货号</th><th>描述</th>
       </tr></thead>
       <tbody>
       {% for it in queryset %}
       <tr>
         <td>{{ it.device.name }}</td>
         <td><code>{{ it.name }}</code></td>
-        <td>{% if it.oper_status == 'UP' %}<span class="bk bk-g">UP</span>{% elif it.oper_status == 'DOWN' %}<span class="bk bk-r">DOWN</span>{% else %}<span class="bk bk-gray">{{ it.oper_status }}</span>{% endif %}</td>
+        <td>{% if it.oper_status == 'UP' %}<span class="bk bk-g">UP</span>{% elif it.oper_status == 'DOWN' %}<span class="bk bk-r">DOWN</span>{% elif it.oper_status == 'ADM' %}<span class="bk bk-gray">ADM</span>{% else %}<span class="bk bk-gray">{{ it.oper_status }}</span>{% endif %}</td>
         <td>{{ it.admin_status }}</td>
         <td>{% if it.speed_mbps %}{{ it.speed_mbps }}M{% else %}—{% endif %}</td>
         <td>{{ it.duplex }}</td>
         <td>{% if it.vlan_id != None %}{{ it.vlan_id }}{% else %}—{% endif %}</td>
+        <td>{% if it.transceiver_type %}<code>{{ it.transceiver_type }}</code>{% else %}—{% endif %}</td>
+        <td>{{ it.transceiver_ordering|default:"—" }}</td>
         <td>{{ it.description|default:"—" }}</td>
       </tr>
       {% empty %}

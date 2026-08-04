@@ -32,6 +32,10 @@ from app02.parsers.comware import (
     parse_security_policy,
     parse_rbm_status,
     parse_flash_usage,
+    parse_power,
+    parse_device,
+    parse_fan,
+    parse_transceiver,
 )
 
 __all__ = [
@@ -53,6 +57,10 @@ __all__ = [
     "parse_security_policy",
     "parse_rbm_status",
     "parse_flash_usage",
+    "parse_power",
+    "parse_device",
+    "parse_fan",
+    "parse_transceiver",
     # 调度层
     "SCHEMA_VERSION",
     "COMMAND_PARSER_MAP",
@@ -89,6 +97,10 @@ COMMAND_PARSER_MAP = {
     'display security-policy ip':                  parse_security_policy,
     'display remote-backup-group status':          parse_rbm_status,
     'dir flash:/':                                 parse_flash_usage,
+    'display fan':                                 parse_fan,
+    'display power':                               parse_power,
+    'display device':                              parse_device,
+    'display transceiver interface':               parse_transceiver,
 }
 
 

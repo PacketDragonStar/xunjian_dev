@@ -51,7 +51,7 @@ code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:.78rem;}
       <tbody>
       {% for d in queryset %}
       <tr>
-        <td><strong>{{ d.name }}</strong></td>
+        <td><a href="/cmdb/device/detail/?name={{ d.name|urlencode }}" style="color:var(--accent);text-decoration:none;font-weight:600">{{ d.name }}</a></td>
         <td><span class="bk bk-gray">{{ d.site }}</span></td>
         <td>{{ d.model }}</td>
         <td>{{ d.os_version }}</td>

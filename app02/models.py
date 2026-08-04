@@ -261,7 +261,7 @@ class AnomalyRecord(models.Model):
     time         = models.CharField(verbose_name='巡检时间', max_length=50)
     device       = models.CharField(verbose_name='设备名', max_length=50)
     command      = models.CharField(verbose_name='命令', max_length=200)
-    notes        = models.CharField(verbose_name='异常说明', max_length=200, null=True, blank=True)
+    notes        = models.TextField(verbose_name='异常说明', null=True, blank=True)
     confirm      = models.BooleanField(verbose_name='已确认', default=False)
     severity     = models.CharField(verbose_name='严重级别', max_length=10, default='P2',
                                      choices=[('P0', 'P0-高危'), ('P1', 'P1-中危'), ('P2', 'P2-低危')])
@@ -478,6 +478,13 @@ class CmdbInterface(models.Model):
     description  = models.CharField(verbose_name='描述', max_length=120, blank=True, default='')
     mac          = models.CharField(verbose_name='MAC', max_length=20, blank=True, default='')
     vlan_id      = models.IntegerField(verbose_name='VLAN', null=True, blank=True)
+    # 光模块信息（由 display transceiver interface 关联）
+    transceiver_type     = models.CharField(verbose_name='光模块型号', max_length=60, blank=True, default='')
+    transceiver_vendor   = models.CharField(verbose_name='光模块厂商', max_length=40, blank=True, default='')
+    transceiver_serial   = models.CharField(verbose_name='光模块序列号', max_length=40, blank=True, default='')
+    transceiver_wavelength = models.CharField(verbose_name='光模块波长(nm)', max_length=10, blank=True, default='')
+    transceiver_distance = models.CharField(verbose_name='光模块距离', max_length=40, blank=True, default='')
+    transceiver_ordering = models.CharField(verbose_name='光模块订货号', max_length=60, blank=True, default='')
 
     class Meta:
         verbose_name = 'CMDB接口'
@@ -546,6 +553,89 @@ class CmdbSyncLog(models.Model):
 
     def __str__(self):
         return f'{self.time} {self.site} ({self.device_count}台)'
+
+
+# ══════════════════════════════════════════════════════════
+# CMDB 硬件资产（巡检采集的硬件信息）
+# ══════════════════════════════════════════════════════════
+
+
+class CmdbFan(models.Model):
+    """风扇（由 display fan 解析）"""
+    device = models.ForeignKey(CmdbDevice, verbose_name='设备', on_delete=models.CASCADE, related_name='fans')
+    fan_id = models.CharField(verbose_name='风扇编号', max_length=10)
+    status = models.CharField(verbose_name='状态', max_length=20, blank=True, default='')
+    fan_type = models.CharField(verbose_name='型号', max_length=40, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'CMDB风扇'
+        unique_together = [('device', 'fan_id')]
+
+    def __str__(self):
+        return f'{self.device.name} Fan{self.fan_id} ({self.status})'
+
+
+class CmdbPowerSupply(models.Model):
+    """电源（由 display power 解析）"""
+    device = models.ForeignKey(CmdbDevice, verbose_name='设备', on_delete=models.CASCADE, related_name='power_supplies')
+    psu_id = models.CharField(verbose_name='电源编号', max_length=10)
+    status = models.CharField(verbose_name='状态', max_length=20, blank=True, default='')
+    psu_type = models.CharField(verbose_name='型号', max_length=40, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'CMDB电源'
+        unique_together = [('device', 'psu_id')]
+
+    def __str__(self):
+        return f'{self.device.name} PSU{self.psu_id} ({self.status})'
+
+
+class CmdbBoard(models.Model):
+    """板卡（由 display device 解析）"""
+    device = models.ForeignKey(CmdbDevice, verbose_name='设备', on_delete=models.CASCADE, related_name='boards')
+    slot = models.CharField(verbose_name='槽位号', max_length=10)
+    board_type = models.CharField(verbose_name='板卡类型', max_length=40, blank=True, default='')
+    status = models.CharField(verbose_name='状态', max_length=20, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'CMDB板卡'
+        unique_together = [('device', 'slot')]
+
+    def __str__(self):
+        return f'{self.device.name} Slot{self.slot} ({self.board_type})'
+
+
+class CmdbTransceiver(models.Model):
+    """光模块（由 display transceiver interface 解析）"""
+    device = models.ForeignKey(CmdbDevice, verbose_name='设备', on_delete=models.CASCADE, related_name='transceivers')
+    interface = models.CharField(verbose_name='接口', max_length=40)
+    module_type = models.CharField(verbose_name='光模块型号', max_length=40, blank=True, default='')
+    vendor = models.CharField(verbose_name='厂商', max_length=40, blank=True, default='')
+    serial = models.CharField(verbose_name='序列号', max_length=40, blank=True, default='')
+    wavelength = models.CharField(verbose_name='波长(nm)', max_length=10, blank=True, default='')
+    distance = models.CharField(verbose_name='传输距离', max_length=40, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'CMDB光模块'
+        unique_together = [('device', 'interface')]
+
+    def __str__(self):
+        return f'{self.device.name}/{self.interface} {self.module_type}'
+
+
+class CmdbFlashStorage(models.Model):
+    """Flash 存储（由 dir flash 解析）"""
+    device = models.ForeignKey(CmdbDevice, verbose_name='设备', on_delete=models.CASCADE, related_name='flash_storage')
+    total_kb = models.BigIntegerField(verbose_name='总容量(KB)', null=True, blank=True)
+    used_kb = models.BigIntegerField(verbose_name='已用(KB)', null=True, blank=True)
+    free_kb = models.BigIntegerField(verbose_name='剩余(KB)', null=True, blank=True)
+    used_pct = models.FloatField(verbose_name='使用率%', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'CMDB Flash'
+
+    def __str__(self):
+        return f'{self.device.name} Flash used={self.used_pct}%'
 
 
 class CheckerScript(models.Model):

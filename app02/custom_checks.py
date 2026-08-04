@@ -688,8 +688,11 @@ def check_logbuffer(parsed, baseline, cfg, extra):
         return False, '未找到有效日志格式，输出可能异常'
 
     if recent:
-        sev, line = recent[0]
-        return False, f'近 {window_days} 天内存在 {len(recent)} 条异常日志(sev={sev}): {line[:80]}...'
+        # 汇总所有异常行，每条一行（前端用 pre-wrap 显示）
+        lines = [f'[{s}] {ln.strip()}' for s, ln in recent[:10]]
+        if len(recent) > 10:
+            lines.append(f'... (+{len(recent)-10}条未显示)')
+        return False, f'近 {window_days} 天内存在 {len(recent)} 条异常日志:\n' + '\n'.join(lines)
 
     return True, ''
 BIAS_OFF = 0.1  # 偏置电流(A)低于此值视为激光器关闭

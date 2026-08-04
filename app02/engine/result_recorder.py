@@ -93,7 +93,7 @@ class ResultRecorder:
                     time=self._time,
                     device=self._device,
                     command=command,
-                    notes=(notes or '')[:190],
+                    notes=notes or '',
                     confirm=False,
                     baseline_val=(baseline_val or '')[:500],
                     current_val=(current_val or '')[:500],
@@ -115,7 +115,7 @@ class ResultRecorder:
         try:
             AnomalyRecord.objects.create(
                 time=time, device=device_name,
-                command='SSH连接', notes=f'连接失败: {error}'[:190],
+                command='SSH连接', notes=f'连接失败: {error}',
                 confirm=False, severity='P1',
             )
         except Exception:

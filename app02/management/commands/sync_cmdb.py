@@ -12,16 +12,19 @@
 每次运行按设备重建其子表（快照语义）。
 """
 import logging
+import re
 
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError
 from app02.models import (
     NewDevice, CheckResult, DeviceParseResult,
     CmdbDevice, CmdbInterface, CmdbVlan, CmdbNeighborLink, CmdbIpSubnet, CmdbSyncLog,
+    CmdbFan, CmdbPowerSupply, CmdbBoard, CmdbTransceiver, CmdbFlashStorage,
 )
 from app02.parsers.comware import (
     parse_version, parse_interface_brief, parse_lldp, parse_vlan_brief,
     parse_running_config, parse_cpu_usage, parse_memory_free, parse_manuinfo,
+    parse_fan, parse_power, parse_device, parse_transceiver, parse_flash_usage,
 )
 
 logger = logging.getLogger('xunjian')
@@ -48,6 +51,59 @@ def _get_structured(device, command, parser_fn):
     return parser_fn(cr.result if cr else '') if cr else None
 
 
+def _preload_results(device_name):
+    """预取一台设备的所有 CheckResult（降为 2 次 DB 查询）"""
+    crs = list(CheckResult.objects.filter(device=device_name)
+               .order_by('command', '-created_at'))
+    seen = set()
+    raw_map = {}
+    for cr in crs:
+        if cr.command not in seen and cr.result:
+            seen.add(cr.command)
+            raw_map[cr.command] = cr.result
+    return raw_map
+
+
+def _preload_structured(device_name):
+    """预取结构化数据"""
+    dprs = list(DeviceParseResult.objects.filter(device=device_name)
+                .order_by('command', '-collected_at'))
+    seen = set()
+    struct_map = {}
+    for dpr in dprs:
+        if dpr.command not in seen and dpr.data is not None:
+            seen.add(dpr.command)
+            struct_map[dpr.command] = dpr.data
+    return struct_map
+
+
+def _from_cache(cmd, raw_map, struct_map, parser_fn, default=None):
+    """从缓存取数据：优先结构化，回落 raw，无数据返回 default"""
+    if cmd in struct_map:
+        return struct_map[cmd]
+    raw = raw_map.get(cmd, '')
+    if raw:
+        return parser_fn(raw)
+    return default or []
+
+
+# 接口长名 → 短名（transceiver 输出用长名，interface brief 用短名）
+#   支持 3 段（HundredGigE1/0/25→HGE1/0/25）和 4 段（FortyGigE1/4/0/33→FGE1/4/0/33）板卡口
+_IF_TYPE_SHORT = {
+    'HundredGigE': 'HGE', 'FortyGigE': 'FGE', 'TwentyGigE': 'TGE',
+    'Twenty-FiveGigE': '25GE', 'Ten-GigabitEthernet': 'XGE',
+    'GigabitEthernet': 'GE', 'M-GigabitEthernet': 'MGE',
+}
+_IF_RE = re.compile(r'^([A-Za-z\-]+)(\d+(?:/\d+){2,4})$')
+
+def _short_iface(name: str) -> str:
+    """HundredGigE1/0/25 → HGE1/0/25；已是短名则原样返回。"""
+    m = _IF_RE.match(name.strip())
+    if not m:
+        return name.strip()
+    return _IF_TYPE_SHORT.get(m.group(1), m.group(1)) + m.group(2)
+
+
 # ───────────────────────── 命令主体 ─────────────────────────
 class Command(BaseCommand):
     help = '将已采集的 CheckResult 解析为 CMDB 台账（设备/接口/VLAN/链路/IP）'
@@ -64,16 +120,18 @@ class Command(BaseCommand):
         synced = 0
         for dev in devs:
             try:
-                # 阶段二：优先消费 DeviceParseResult（采集时已解析一次），无则实时 parse 回退
-                dv = _get_structured(dev.name, 'display version', parse_version) or {}
-                real_name = dv.get('name', '')  # 真机回显主机名，仅作参考/日志，不作为主键
-                cpu_v = _get_structured(dev.name, 'display cpu-usage', parse_cpu_usage)
-                mem_v = _get_structured(dev.name, 'display memory', parse_memory_free)
-                ifb_data = _get_structured(dev.name, 'display interface brief', parse_interface_brief) or []
-                lldp_data = _get_structured(dev.name, 'display lldp neighbor-information list', parse_lldp) or []
-                vlan_data = _get_structured(dev.name, 'display vlan brief', parse_vlan_brief) or []
-                cfg_data = _get_structured(dev.name, 'display current-configuration', parse_running_config) or {}
-                manu_data = _get_structured(dev.name, 'display device manuinfo', parse_manuinfo) or ''
+                # ★ 预取缓存：每台设备从 ~20 次 DB 查询降为 2 次
+                raw_map = _preload_results(dev.name)
+                struct_map = _preload_structured(dev.name)
+
+                dv = _from_cache('display version', raw_map, struct_map, parse_version, {})
+                cpu_v = _from_cache('display cpu-usage', raw_map, struct_map, parse_cpu_usage)
+                mem_v = _from_cache('display memory', raw_map, struct_map, parse_memory_free)
+                ifb_data = _from_cache('display interface brief', raw_map, struct_map, parse_interface_brief, [])
+                lldp_data = _from_cache('display lldp neighbor-information list', raw_map, struct_map, parse_lldp, [])
+                vlan_data = _from_cache('display vlan brief', raw_map, struct_map, parse_vlan_brief, [])
+                cfg_data = _from_cache('display current-configuration', raw_map, struct_map, parse_running_config, {})
+                manu_data = _from_cache('display device manuinfo', raw_map, struct_map, parse_manuinfo, '')
                 # 序列号：优先 display device manuinfo，缺失时回退 display version 的 SN
                 serial = (manu_data or '') or dv.get('serial', '')
 
@@ -91,10 +149,36 @@ class Command(BaseCommand):
                     ),
                 )
 
-                # 子表按设备重建（快照）
+                trans_data = _from_cache('display transceiver interface', raw_map, struct_map, parse_transceiver, [])
+                cmdb_dev.transceivers.all().delete()
+                # 建立 接口名(短名) → 光模块 索引，供接口表关联
+                #   Ten-GigabitEthernet1/0/1 → XGE1/0/1, HundredGigE1/0/25 → HGE1/0/25
+                trans_by_iface = {}
+                for t in trans_data:
+                    long_name = t.get('iface', '')
+                    short = _short_iface(long_name)
+                    trans_by_iface[short] = t
+                    try:
+                        CmdbTransceiver.objects.create(
+                            device=cmdb_dev, interface=long_name,
+                            module_type=t.get('type', ''), vendor=t.get('vendor', ''),
+                            serial=t.get('serial', ''), wavelength=t.get('wavelength', ''),
+                            distance=t.get('distance', ''),
+                        )
+                    except IntegrityError:
+                        continue
+
+                # 子表按设备重建（快照）：接口带光模块信息
                 cmdb_dev.interfaces.all().delete()
                 for it in ifb_data:
-                    CmdbInterface.objects.create(device=cmdb_dev, **it)
+                    t = trans_by_iface.get(it.get('name', ''), {})
+                    CmdbInterface.objects.create(device=cmdb_dev, **it,
+                                                 transceiver_type=t.get('type', ''),
+                                                 transceiver_vendor=t.get('vendor', ''),
+                                                 transceiver_serial=t.get('serial', ''),
+                                                 transceiver_wavelength=t.get('wavelength', ''),
+                                                 transceiver_distance=t.get('distance', ''),
+                                                 transceiver_ordering=t.get('ordering_name', ''))
 
                 cmdb_dev.links.all().delete()
                 for nb in lldp_data:
@@ -119,8 +203,56 @@ class Command(BaseCommand):
                     except IntegrityError:
                         continue
 
+                # ── 硬件表同步 ──
+                fan_data = _from_cache('display fan', raw_map, struct_map, parse_fan, [])
+                cmdb_dev.fans.all().delete()
+                for f in fan_data:
+                    try:
+                        CmdbFan.objects.create(
+                            device=cmdb_dev, fan_id=f.get('fan_id', ''),
+                            status=f.get('status', ''), fan_type=f.get('type', ''),
+                        )
+                    except IntegrityError:
+                        continue
+
+                psu_data = _from_cache('display power', raw_map, struct_map, parse_power, [])
+                cmdb_dev.power_supplies.all().delete()
+                for p in psu_data:
+                    try:
+                        CmdbPowerSupply.objects.create(
+                            device=cmdb_dev, psu_id=p.get('id', ''),
+                            status=p.get('status', ''), psu_type=p.get('type', ''),
+                        )
+                    except IntegrityError:
+                        continue
+
+                board_data = _from_cache('display device', raw_map, struct_map, parse_device, [])
+                cmdb_dev.boards.all().delete()
+                for b in board_data:
+                    try:
+                        CmdbBoard.objects.create(
+                            device=cmdb_dev, slot=b.get('slot', ''),
+                            board_type=b.get('type', ''), status=b.get('status', ''),
+                        )
+                    except IntegrityError:
+                        continue
+
+                flash_data = _from_cache('dir flash:/', raw_map, struct_map, parse_flash_usage)
+                cmdb_dev.flash_storage.all().delete()
+                if flash_data:
+                    try:
+                        CmdbFlashStorage.objects.create(
+                            device=cmdb_dev,
+                            total_kb=flash_data.get('total_kb'),
+                            used_kb=flash_data.get('used_kb'),
+                            free_kb=flash_data.get('free_kb'),
+                            used_pct=flash_data.get('used_percent'),
+                        )
+                    except IntegrityError:
+                        continue
+
                 synced += 1
-                self.stdout.write(self.style.SUCCESS(f'  [OK] {dev.name} (真实主机名={real_name or "-"} 接口{len(ifb_data)} 链路{len(lldp_data)} VLAN{len(vlan_data)})'))
+                self.stdout.write(self.style.SUCCESS(f'  [OK] {dev.name} (接口{len(ifb_data)} 链路{len(lldp_data)} VLAN{len(vlan_data)})'))
             except Exception as e:
                 self.stdout.write(self.style.WARNING(f'  [FAIL] {dev.name}: {e}'))
                 logger.exception(f'[sync_cmdb] {dev.name} 失败')

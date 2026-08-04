@@ -30,9 +30,9 @@ body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif
 .cmd-body.show{display:block;}
 .cmd-body pre{background:#0d1117;color:#c9d1d9;border-radius:6px;padding:12px;font-size:.78rem;font-family:Consolas,monospace;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin:0;border:1px solid #30363d;}
 
-.anom-item{padding:10px 16px;border-bottom:1px solid #eaeef2;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.anom-item{padding:10px 16px;border-bottom:1px solid #eaeef2;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .anom-item:last-child{border-bottom:none;}
-.anom-item .notes{font-size:.82rem;color:#57606a;flex:1;}
+.anom-item .notes{font-size:.82rem;color:#57606a;flex:1;white-space:pre-wrap;overflow-wrap:break-word;line-height:1.5;min-width:200px;max-width:100%;}
 .anom-item .actions{display:flex;gap:6px;flex-shrink:0;}
 
 .bk-ok{background:#dafbe1;color:#1a7f37;padding:2px 9px;border-radius:20px;font-size:.76rem;font-weight:600;}

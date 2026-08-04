@@ -2513,12 +2513,34 @@ def cmdb_device_list(request):
     })
 
 
+def cmdb_device_detail(request):
+    """CMDB 设备详情：基础信息 + 硬件资产"""
+    from app02.models import CmdbDevice
+    from django.shortcuts import get_object_or_404
+    name = request.GET.get('name', '').strip()
+    dev = get_object_or_404(CmdbDevice, name=name)
+    ctx = {
+        'dev': dev,
+        'fans': dev.fans.all(),
+        'power_supplies': dev.power_supplies.all(),
+        'boards': dev.boards.all(),
+        'transceivers': dev.transceivers.all(),
+        'flash': dev.flash_storage.first(),
+        'interfaces': dev.interfaces.all()[:20],
+        'neighbors': dev.links.all()[:50],
+        'vlans': dev.vlans.all()[:50],
+        'ips': dev.ips.all()[:50],
+    }
+    return render(request, 'cmdb_device_detail.html', ctx)
+
+
 def cmdb_interface_list(request):
-    """CMDB 接口台账：站点 + 状态(UP/DOWN) + 关键字筛选"""
+    """CMDB 接口台账：站点 + 状态(UP/DOWN/ADM) + 光模块筛选 + 关键字"""
     from app02.models import CmdbInterface
     from django.db.models import Q
     site = request.GET.get('site', '')
-    status = request.GET.get('status', '')   # all / up / down
+    status = request.GET.get('status', '')   # all / up / down / adm
+    trans = request.GET.get('trans', '')     # '' / any / none / idle / inuse
     q = request.GET.get('q', '').strip()
     qs = CmdbInterface.objects.select_related('device')
     if site:
@@ -2527,12 +2549,25 @@ def cmdb_interface_list(request):
         qs = qs.filter(oper_status='UP')
     elif status == 'down':
         qs = qs.filter(oper_status='DOWN')
+    elif status == 'adm':
+        qs = qs.filter(oper_status='ADM')
+    if trans == 'any':
+        qs = qs.exclude(transceiver_type='')
+    elif trans == 'none':
+        qs = qs.filter(transceiver_type='')
+    elif trans == 'idle':
+        # 空闲光模块：插了光模块且端口 DOWN/ADM（不含有描述的对端未起）
+        qs = qs.exclude(transceiver_type='').filter(
+            Q(oper_status='DOWN') | Q(oper_status='ADM'))
+    elif trans == 'inuse':
+        qs = qs.exclude(transceiver_type='').filter(oper_status='UP')
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(device__name__icontains=q) |
-                       Q(description__icontains=q))
+                       Q(description__icontains=q) | Q(transceiver_type__icontains=q) |
+                       Q(transceiver_ordering__icontains=q))
     return render(request, 'cmdb_interface.html', {
         'queryset': qs, 'sites': _cmdb_sites(),
-        'site': site, 'status': status, 'q': q,
+        'site': site, 'status': status, 'trans': trans, 'q': q,
     })
 
 

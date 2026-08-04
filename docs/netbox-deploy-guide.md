@@ -9,8 +9,8 @@
 
 内网机器环境（先确认以下全部打勾再继续）：
 
-- [ ] **xunjian 项目路径**：确认内网 `xunjian_system1/` 根目录位置
-- [ ] **Python venv**：确认内网可用（`venv/Scripts/python.exe` 或同名）
+- [x] **xunjian 项目路径**：确认内网 `xunjian_system1/` 根目录位置
+- [x] **Python venv**：确认内网可用（`venv/Scripts/python.exe` 或同名）
 - [ ] **MySQL 可达**：`settings.py` 中数据库配置正确，`python manage.py check` 通过
 - [ ] **Docker**：`docker --version` ≥ 24.0
 - [ ] **Docker Compose**：`docker compose version` ≥ v2.20

@@ -82,10 +82,6 @@ urlpatterns = [
     path('new/tools/checker_script/save/',     views.checker_script_save,     name='checker_script_save'),
     path('new/tools/checker_script/rollback/', views.checker_script_rollback, name='checker_script_rollback'),
 
-    # ── AI辅助批量导入 ──
-    path('new/import/',         views.new_import_page,        name='new_import_page'),
-    path('new/import/parse/',   views.new_ai_parse,           name='new_ai_parse'),
-    path('new/import/batch/',   views.new_ai_batch_import,    name='new_ai_batch_import'),
 
     # ── 验收报告 ──
     path('new/report/acceptance/', views.acceptance_report,   name='acceptance_report'),
@@ -96,6 +92,7 @@ urlpatterns = [
 
     # ── CMDB 台账查询 ──
     path('cmdb/device/',    views.cmdb_device_list,    name='cmdb_device_list'),
+    path('cmdb/device/detail/', views.cmdb_device_detail, name='cmdb_device_detail'),
     path('cmdb/interface/', views.cmdb_interface_list, name='cmdb_interface_list'),
     path('cmdb/link/',      views.cmdb_link_list,      name='cmdb_link_list'),
     path('cmdb/ip/',        views.cmdb_ip_list,        name='cmdb_ip_list'),

@@ -82,6 +82,7 @@ python manage.py test app02.tests
 ### 常见坑
 
 - DB checker 覆盖优先级 > 文件版。如果巡检行为跟文件版不一致，先检查 `CheckerScript` 表是否有 `enabled=True` 的覆盖
+- **改 `custom_checks.py` 后必须运行** `python manage.py sync_checkers` 同步 DB，否则运行时仍用旧 DB 版本
 - 设备名含 `&` 是 IRF 设备（如 `csw001&002`），netmiko prompt 匹配可能不稳定
 - `datetime` 在 DB checker 命名空间中是**类**不是模块，`timedelta` 也单独注入
 - 改 `FEATURE_KEYWORDS` 的检测正则时，必须加 `re.MULTILINE` 否则 `^` 只匹配字符串开头
