@@ -1,0 +1,148 @@
+{% extends "layout.html" %}
+{% load static %}
+{% block css %}
+<style>
+:root{--accent:#0F6E56;--border:#d0d7de;--card:#fff;--paper:#f6f8fa;}
+body{background:var(--paper);font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+.pw{max-width:1100px;margin:0 auto;padding:26px 16px;}
+.bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.bar h4{margin:0;font-weight:700;}
+.cnt{color:#57606a;font-size:.8rem;margin-left:8px;font-weight:400;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;}
+.card h5{margin:0 0 12px;font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:8px;}
+.card h5 .step{background:var(--accent);color:#fff;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;}
+.filt{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.filt select,.filt input{height:34px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font-size:.85rem;background:#fff;}
+.filt select{min-width:220px;}
+.cmd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:6px;max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:10px;}
+.cmd-item{display:flex;align-items:center;gap:8px;font-size:.83rem;padding:4px 6px;border-radius:6px;}
+.cmd-item:hover{background:#f6f8fa;}
+.cmd-item code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:.78rem;color:#24292f;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.btn-dl{background:var(--accent);color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;}
+.btn-dl:hover{opacity:.9;}
+.btn-dl:disabled{opacity:.5;cursor:not-allowed;}
+.meta{font-size:.8rem;color:#57606a;margin-top:8px;}
+.check-all{font-size:.8rem;color:#0F6E56;cursor:pointer;user-select:none;}
+.empty{padding:30px;text-align:center;color:#8c959f;font-size:.9rem;}
+.site-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.site-chip{padding:4px 12px;border-radius:20px;border:1px solid var(--border);font-size:.8rem;cursor:pointer;background:#fff;}
+.site-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.progress-wrap{display:none;margin-top:12px;}
+.progress-bar{height:6px;background:#e6eaef;border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);width:0%;transition:width .3s;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pw">
+  <div class="bar">
+    <h4>命令回显批量下载<span class="cnt">按巡检时间 · 命令 · 设备范围打包 zip</span></h4>
+  </div>
+
+  <div class="card">
+    <h5><span class="step">1</span>选择巡检时间</h5>
+    <div class="filt">
+      <select id="sel-time">
+        {% for t in records %}
+        <option value="{{ t }}" {% if t == latest %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+      <span class="meta">下拉框切换时间后，命令列表会自动更新</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h5><span class="step">2</span>选择命令 <span class="check-all" id="check-all">全选</span></h5>
+    <div class="cmd-grid" id="cmd-grid">
+      {% for c in commands %}
+      <label class="cmd-item">
+        <input type="checkbox" value="{{ c }}" class="cmd-cb" checked>
+        <code>{{ c }}</code>
+      </label>
+      {% endfor %}
+    </div>
+    <div class="meta" id="cmd-count">已选 {{ commands|length }} 个命令</div>
+  </div>
+
+  <div class="card">
+    <h5><span class="step">3</span>设备范围</h5>
+    <div class="site-row">
+      <button type="button" class="site-chip active" data-site="">全部站点</button>
+      {% for s in sites %}
+      <button type="button" class="site-chip" data-site="{{ s }}">{{ s }}</button>
+      {% endfor %}
+    </div>
+    <div class="meta">提示：只打包「有选中命令回显」的设备；未巡检/无数据的设备自动跳过。</div>
+  </div>
+
+  <div class="card">
+    <button class="btn-dl" id="btn-download">打包下载 ZIP</button>
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="meta" id="progress-text">打包中…</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+const grid = document.getElementById('cmd-grid');
+const timeSel = document.getElementById('sel-time');
+
+// 时间切换 → 重新加载命令列表
+timeSel.addEventListener('change', async () => {
+  grid.innerHTML = '<div class="empty">加载命令列表…</div>';
+  try {
+    const resp = await fetch(`/new/cmd/download/commands/?time=${encodeURIComponent(timeSel.value)}`);
+    const data = await resp.json();
+    grid.innerHTML = '';
+    data.commands.forEach(c => {
+      const label = document.createElement('label');
+      label.className = 'cmd-item';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.value = c; cb.className = 'cmd-cb'; cb.checked = true;
+      const code = document.createElement('code');
+      code.textContent = c;
+      label.appendChild(cb); label.appendChild(code);
+      grid.appendChild(label);
+    });
+    updateCount();
+  } catch (e) { grid.innerHTML = '<div class="empty">加载失败</div>'; }
+});
+
+// 全选
+document.getElementById('check-all').addEventListener('click', () => {
+  const all = [...document.querySelectorAll('.cmd-cb')];
+  const anyUnchecked = all.some(cb => !cb.checked);
+  all.forEach(cb => cb.checked = anyUnchecked);
+  updateCount();
+});
+grid.addEventListener('change', updateCount);
+function updateCount() {
+  const n = document.querySelectorAll('.cmd-cb:checked').length;
+  document.getElementById('cmd-count').textContent = `已选 ${n} 个命令`;
+}
+
+// 站点切换
+let selSite = '';
+document.querySelectorAll('.site-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.site-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    selSite = chip.dataset.site;
+  });
+});
+
+// 下载
+document.getElementById('btn-download').addEventListener('click', () => {
+  const cmds = [...document.querySelectorAll('.cmd-cb:checked')].map(cb => cb.value);
+  const time = timeSel.value;
+  if (!time || !cmds.length) { alert('请选择时间和至少一个命令'); return; }
+  const params = new URLSearchParams({ time });
+  if (selSite) params.set('site', selSite);
+  cmds.forEach(c => params.append('commands', c));
+  const url = `/new/cmd/download/zip/?${params.toString()}`;
+  // 直接跳转下载（zip 是 GET 流式响应）
+  window.location.href = url;
+});
+</script>
+{% endblock %}

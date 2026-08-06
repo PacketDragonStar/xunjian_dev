@@ -324,6 +324,81 @@ def config_download(request):
     return response
 
 
+def cmd_download_page(request):
+    """命令回显批量下载：页面（选择巡检时间 / 命令 / 设备范围）"""
+    from app02.models import XunjianRecord
+    recs = (XunjianRecord.objects.order_by('-time')
+            .values_list('time', flat=True)[:20])
+    # 最近一次巡检的命令类型（供默认勾选）
+    latest = recs[0] if recs else ''
+    cmds = (CheckResult.objects.filter(time=latest)
+            .values_list('command', flat=True).distinct()
+            .order_by('command')) if latest else []
+    sites = (NewDevice.objects.exclude(site='')
+             .values_list('site', flat=True).distinct().order_by('site'))
+    return render(request, 'cmd_download.html', {
+        'records': recs, 'latest': latest,
+        'commands': list(cmds), 'sites': list(sites),
+    })
+
+
+def cmd_download_commands(request):
+    """命令回显批量下载：按时间取命令列表（时间切换时 AJAX 刷新）"""
+    from django.http import JsonResponse
+    time_ = request.GET.get('time', '')
+    cmds = []
+    if time_:
+        cmds = (CheckResult.objects.filter(time=time_)
+                .values_list('command', flat=True).distinct()
+                .order_by('command'))
+    return JsonResponse({'commands': list(cmds)})
+
+
+
+def cmd_download_zip(request):
+    """命令回显批量下载：按选择打包 zip（每设备一个 .txt，!Command: 分段）"""
+    import io as _io
+    import zipfile
+    from django.http import HttpResponse
+    from django.db.models import Q
+
+    time_  = request.GET.get('time', '')
+    site   = request.GET.get('site', '')
+    cmds   = [c for c in request.GET.getlist('commands') if c]
+    if not time_ or not cmds:
+        return HttpResponse('缺少参数 time/commands', status=400)
+
+    # 设备范围：站点过滤 + 是否只看有回显的设备
+    qs = NewDevice.objects.filter(enabled=True)
+    if site:
+        qs = qs.filter(site=site)
+    devices = list(qs.values_list('name', flat=True))
+
+    # 取回显
+    rows = list(CheckResult.objects.filter(
+        time=time_, device__in=devices, command__in=cmds
+    ))
+    by_dev = {}
+    for r in rows:
+        by_dev.setdefault(r.device, {})[r.command] = r.result or ''
+
+    buf = _io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for dev in sorted(by_dev.keys()):
+            parts = []
+            for cmd in cmds:
+                if cmd in by_dev[dev]:
+                    parts.append(f'!Command: {cmd}\n{by_dev[dev][cmd]}\n')
+            if parts:
+                zf.writestr(f'{time_.replace(" ","_").replace(":","-")}/{dev}.txt',
+                            '\n'.join(parts))
+
+    fname = f'cmd_download_{time_.replace(" ","_").replace(":","-")}'
+    resp = HttpResponse(buf.getvalue(), content_type='application/zip')
+    resp['Content-Disposition'] = f'attachment; filename="{fname}.zip"'
+    return resp
+
+
 def _strip_for_compare(text, cfg):
     """按 CheckItem.compare_strip 配置清洗文本：去前 N 行 + 跳过匹配正则的行。"""
     if not cfg or not text:

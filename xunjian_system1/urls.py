@@ -47,6 +47,11 @@ urlpatterns = [
     # ── 配置下载 ──
     path('new/config/download/', views.config_download,        name='config_download'),
 
+    # ── 命令回显批量下载 ──
+    path('new/cmd/download/',    views.cmd_download_page,     name='cmd_download_page'),
+    path('new/cmd/download/zip/', views.cmd_download_zip,     name='cmd_download_zip'),
+    path('new/cmd/download/commands/', views.cmd_download_commands, name='cmd_download_commands'),
+
     # ── 巡检项管理 ──
     path('new/checkitem/list/',   views.new_checkitem_list,   name='new_checkitem_list'),
     path('new/checkitem/add/',    views.new_checkitem_add,    name='new_checkitem_add'),
